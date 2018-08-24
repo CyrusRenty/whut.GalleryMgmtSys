@@ -1,7 +1,14 @@
 import xadmin
 from xadmin.layout import Main, Fieldset, Side
 
-from .models import BannerModel, ImageModel, GroupImage, Comment, SmallGroups, Groups
+from .models import BannerModel, ImageModel, Comment, SmallGroups, Groups, SearchWord
+
+
+class SearchWordAdmin(object):
+    list_display = ('word', 'add_time', 'num')
+    search_fields = ('word',)
+    list_filter = ('num', 'add_time')
+    model_icon = 'fa fa-file-word-o'
 
 
 class GroupsAdmin(object):
@@ -81,13 +88,6 @@ class ImageModelAdmin(object):
         return self.readonly_fields
 
 
-# class GroupImageAdmin(object):
-#     list_display = ('name', 'image', 'add_time')
-#     search_fields = ('name', 'image')
-#     list_filter = ('name', 'image', 'add_time')
-#     model_icon = 'fa fa-object-group'
-
-
 class CommentAdmin(object):
     list_display = ('content', 'like', 'image', 'user', 'reply', 'add_time', 'num')
     search_fields = ('content',)
@@ -106,3 +106,4 @@ xadmin.site.register(ImageModel, ImageModelAdmin)
 xadmin.site.register(Comment, CommentAdmin)
 xadmin.site.register(SmallGroups, SmallGroupsAdmin)
 xadmin.site.register(Groups, GroupsAdmin)
+xadmin.site.register(SearchWord, SearchWordAdmin)
