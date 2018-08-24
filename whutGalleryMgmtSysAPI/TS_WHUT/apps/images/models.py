@@ -118,3 +118,7 @@ class SearchWord(models.Model):
     word = models.CharField(max_length=50, verbose_name="搜索词")
     add_time = models.DateField(default=datetime.now, verbose_name="添加时间")
     num = models.IntegerField(default=1, verbose_name="搜索次数")
+
+    class Meta:
+        verbose_name = "被搜索词"
+        verbose_name_plural = verbose_name
