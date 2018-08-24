@@ -1,33 +1,33 @@
 # 项目名称 -- 图说理工
 
-#### 项目环境
+## apps
 
-此项目环境是python3.6，建议使用虚拟环境，需要的包在`requirements.txt` 中，在终端中`cd xxxx` 'xxxx' 是此项目的目录，TS_WHUT的同级目录，运行命令`pip install　-r requirements.txt` 安装相关的包，
+应用程序文件夹，所有app都放在该文件夹
 
-#### 配置文件
+## conf
 
-安装nginx：`sudo apt-get install nginx` 运行`ifconfig` 查看IP地址(inet后的数字)。 安装uwsgi：`sudo apt-get install uwsgi` 安装mysql: `sudo apt-get insatll mysql-server` 。建议安装navicat for mysql能更好的管理mysql。在 etc/mysql/mysql.conf.d/mysql.cnf中将端口改好。运行 `mysql` 在mysql中运行`GRANT ALL PRIVILEGES ON *.* TO '用户名'@'%' IDENTIFIED BY '密码' WITH GRANT OPTION;` 与`FLUSH PRIVILEGES;` 。　
+配置文件，部署时需要的配置都放在该文件夹
 
-配置文件在conf文件夹中，拷贝`uc_nginx.conf` 到 `/etc/nginx/conf.d` 目录。
+## extra_apps
 
-启动uwsgi: `uwsgi --http :8000 --module ruan.wsgi` ruan.wsgi为本项目的wsgi的文件目录。
+外部app，修改的他人的app都放在该目录下
 
-#### 关于目录的修改
+## static
 
-在conf文件夹的uc_nginx.conf文件中，你会看到`server_name 192.168.22.129 www.xuehai.com; #substitute your machine's IP address or FQDN` 这一行，请将这一行中的IP地址更改为你的主机IP地址，后面的域名更改为你的域名。
+静态文件
 
-在`# 指向django的media目录`　前的路径更改为你的项目存放的media目录
+## templates
 
-在`# 指向django的static目录`　前的路径更改为你的静态文件目录
+模板文件
 
-在conf文件夹中的uwsgi.ini配置文件中
+## test
 
-在`chdir           = /home/aiyane/aiyane/myWork/src` 这一行的路径中更改为你的项目存放路径
+调试时写的脚本放在这里
 
-在`virtualenv = /home/aiyane/.virtualenvs/ruan` 这一行更改为你的虚拟环境的路径
+## TS_WHUT
 
-运行命令`python manage.py collecstatic` 配置所有静态文件
+包含项目配置文件，WSGI文件，API接口
 
-#### 启动
+## 其他
 
-cd 到　conf文件同级目录，运行命令`uwsgi -i uwsgi.ini` 启动服务器即可．
+在测试阶段，查看API文档请访问 `/docs/` 路由，详细参数与返回信息实例也可以直接在 `/` 路由下测试查看，在生产环境下将关闭 `docs` 以及 `/` 路由。
