@@ -1,7 +1,7 @@
 import imghdr
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
-from .models import ImageModel, GroupImage
+from .models import ImageModel, GroupImage, SmallGroups
 
 
 @receiver(pre_delete, sender=ImageModel)
@@ -33,4 +33,10 @@ def create_group_image(sender, instance=None, created=False, **kwargs):
         cates = instance.cates.split(" ")
         for cate in cates:
             if cate:
-                GroupImage(image=instance, name=cate).save()
+                groups = SmallGroups.objects.filter(name=cate)
+                if groups.count():
+                    GroupImage(image=instance, name=cate, group=groups[0]).save()
+                else:
+                    group = SmallGroups(name=cate)
+                    group.save()
+                    GroupImage(image=instance, name=cate, group=group).save()
