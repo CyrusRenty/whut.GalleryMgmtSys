@@ -1,0 +1,102 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <link rel="stylesheet" href="{% static 'css/blueimp-gallery.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/images.css' %}">
+</head>
+
+<body>
+    <h1>图说理工 | 签约审核</h1>
+    <h2>{{ user.username }}的个人资料</h2>
+    <div>
+        <span data-shadow-text="">真实姓名:{{ user.real_name }}</span><br/>
+        <span data-shadow-text="">专业班级:{{ user.p_class }}</span><br/>
+        <span data-shadow-text="">腾讯账号:{{ user.qq }}</span><br/>
+        <span data-shadow-text="">手机号码:{{ user.mobile }}</span><br/>
+        <span data-shadow-text="">身份证照:</span>
+        <img src="{{ MEDIA_URL }}{{ user.id_card.url }}" width="745px">
+    </div>
+    <h2>{{ user.username }}的作品集</h2>
+    <div id="links">
+        {% for image in images %}
+        <a href="{{ MEDIA_URL }}{{ image.image.url }}" title="{{ image.name }}">
+            <img src="{{ MEDIA_URL }}{{ image.image.url }}" width="145px" height="100px" alt="{{ image.name }}">
+        </a>
+        {% endfor %}
+    </div>
+    <div id="blueimp-gallery" class="blueimp-gallery">
+        <div class="slides"></div>
+        <h3 class="title"></h3>
+        <a class="prev">‹</a>
+        <a class="next">›</a>
+        <a class="close">×</a>
+        <a class="play-pause"></a>
+        <ol class="indicator"></ol>
+    </div>
+    <svg class="filter" version="1.1">
+        <defs>
+            <filter id="gooeyness">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+              <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -10" result="gooey" />
+              <feComposite in="SourceGraphic" in2="gooey" operator="atop" />
+            </filter>
+        </defs>
+    </svg>
+    <h2>{{ user.username }}的审查结果</h2>
+    <form action="{% url 'check' %}" method="post">
+        <div class="radios-boxes">
+          <div class="radios">
+            <input type="radio" name="radio" id="radio1" class="radio" value="n">
+            <input type="radio" name="radio" id="radio2" class="radio" value="y">
+            <div class="ball"></div>
+          </div>
+          <div class="labels">
+            <label for="radio1" name="res" class="label">不通过审核</label>
+            <label for="radio2" name="res" class="label">通过审核</label>
+          </div>
+        </div>
+        <input name="user" value="{{ user.id }}" hidden="hidden" />
+        <div class="wrap">
+            <button href="#" class="button submit" type="submit">提交!</button>
+        </div>
+
+        {% csrf_token %}
+    </form>
+
+
+    <script src="{% static 'js/blueimp-gallery.min.js' %}"></script>
+    <script>
+    document.getElementById('links').onclick = function(event) {
+        event = event || window.event;
+        var target = event.target || event.srcElement,
+            link = target.src ? target.parentNode : target,
+            options = {
+                index: link,
+                event: event
+            },
+            links = this.getElementsByTagName('a');
+        blueimp.Gallery(links, options);
+    };
+    var radios = document.querySelectorAll('.radio');
+    var labels = document.querySelectorAll('.label');
+    var ball = document.querySelector('.ball');
+    var prevRadio, prevLabel;
+    radios.forEach((radio, index) => {
+      radio.addEventListener('click', function(e) {
+        if (prevRadio) prevRadio.classList.toggle('active');
+        if (prevLabel) prevLabel.classList.toggle('active');
+        radio.classList.toggle('active');
+        prevRadio = radio;
+        labels[index].classList.toggle('active');
+        prevLabel = labels[index];
+        ball.className = `ball pos${index}`;
+      });
+    });
+    </script>
+</body>
+
+</html>
