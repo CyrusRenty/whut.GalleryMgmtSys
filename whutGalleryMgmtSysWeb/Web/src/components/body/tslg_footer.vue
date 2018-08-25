@@ -13,7 +13,7 @@
     <div class="footer-right">
       <h3>联系客服</h3>
       <a><i class="icon-phone"></i>400-9987011</a>
-      <a ><i class=" icon-location"></i>武汉理工大学具体地址具体地址</a>
+      <a><i class=" icon-location"></i>武汉理工大学具体地址具体地址</a>
     </div>
   </div>
 </template>
@@ -44,6 +44,10 @@
     width: 100%;
     background-color:white;
     padding: 6.5rem 0;
+
+  }
+  .footer a{
+    color: #9b9b9b;
   }
   .footer .footer-left{
     display: inline-block;
@@ -65,7 +69,6 @@
   .footer .footer-item{
     display: block;
     text-decoration: none;
-    color: #cecece;
     margin-bottom: 1rem;
   }
   .footer-right a{

@@ -53,5 +53,10 @@ export function getInOtherUser(id){
   }
 }
 export function goLogin() {
+  store.commit('SET_DO_LOGIN',true)
   router.push('/tslg/login')
+}
+export function goRegister() {
+  store.commit('SET_DO_LOGIN',false)
+  router.push({name:'login'})
 }

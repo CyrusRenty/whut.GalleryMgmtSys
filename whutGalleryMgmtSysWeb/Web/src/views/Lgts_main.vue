@@ -1,10 +1,13 @@
 <template>
   <div class="main">
     <Lgts_head/>
+    <main_search class="search"/>
     <Lgts_lunbo/>
-    <lgts_nav/>
-    <Lgts_image/>
+    <!--<lgts_nav/>-->
+    <!--<Lgts_image/>-->
+    <main_image/>
     <tslg_footer/>
+    <!--<animation/>-->
     <router-view/>
   </div>
 </template>
@@ -15,7 +18,9 @@
   import Lgts_lunbo from './Lgts_lunbo'
   import Lgts_image from '../components/card/main_image_card'
   import tslg_footer from '../components/body/tslg_footer'
-  import collect from '../components/card/collect'
+  import main_search from '../components/main_search'
+  import main_image from '../views/main_image'
+  import animation from '../components/animation'
     export default {
       components: {
         Lgts_lunbo,
@@ -23,7 +28,9 @@
         lgts_nav,
         Lgts_image,
         tslg_footer,
-        collect
+        main_search,
+        main_image,
+        animation
       },
       name: "Lgts_main",
       created(){
@@ -38,4 +45,11 @@
  .main{
    background: #f7fafb;
  }
+
+  .margin-b{
+    margin-bottom: 1.25rem;
+  }
+  .margin-t{
+    margin-top: 1.25rem;
+  }
 </style>

@@ -2,7 +2,7 @@
   <div>
   <div class="declareHead" ref="zcsm_header">
     <div class="head-left">
-      <div class="logo clear"></div><span class="head-line"></span><span class="zcsm-title">{{title}}</span>
+      <div class="logo"><a href="http://111.231.230.54/tslg/main"></a> </div><span class="head-line"></span><span class="zcsm-title">{{title}}</span>
     </div>
     <div class="headLink">
       <a @click="goLogin">登录</a>
@@ -46,12 +46,14 @@
     </div>
   </div>
     <div class="copyright">
-      Copyright©&nbsp;&nbsp;&nbsp;2018&nbsp;&nbsp;&nbsp;武汉理工大学
+      Copyright©&nbsp;&nbsp;&nbsp;2018&nbsp;&nbsp;&nbsp;共青团武汉理工大学委员会宣传部
     </div>
   </div>
 </template>
 
 <script>
+    import {goRegister} from "../utils/user";
+
     export default {
         name: "zcsm",
       data(){
@@ -74,8 +76,7 @@
           this.$router.push({name:'login'})
         },
         goRegister(){
-          this.$store.commit('SET_DO_LOGIN',false)
-          this.$router.push({name:'login'})
+         goRegister()
         },
         setHead(){
           if(document.documentElement.scrollTop>80){
@@ -123,10 +124,16 @@
   .logo{
     display: inline-block;
     float: left;
-    height: 30px;
-    width: 101px;
+    height: 1.875rem;
+    width: 6.3125rem;
     background: url(../assets/header_logo.png) center;
     background-size:100% 100%;
+    cursor: pointer;
+  }
+  .logo a{
+    display: block;
+    width: 100%;
+    height: 100%;
   }
   .clear:after{
     content: '';
@@ -139,11 +146,11 @@
   }
   .headLink a{
     font-size:1.5rem;
-    padding:0 8px;
+    padding:0 0.5rem;
     cursor:pointer;
   }
   .headLink a.borderSpan{
-    border-left:1px solid #000;
+    border-left:0.0625rem solid #000;
   }
 
   /*声明页面的声明内容样式*/

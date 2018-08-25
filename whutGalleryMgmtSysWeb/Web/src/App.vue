@@ -49,6 +49,7 @@ export default {
   a{
     text-decoration: none;
     color: #4a4a4a;
+    cursor: pointer;
   }
   input{
     outline: none;
@@ -69,5 +70,9 @@ export default {
     font-family: Arial;
     font-weight: 400;
     outline: none;
+  }
+  ul{
+    margin: 0;
+    padding: 0;
   }
 </style>

@@ -12,7 +12,7 @@ const imageGroup={
     imageInfo:{},//mock.photos.results[0],
     image_userInfo:{},
     image_id:0,
-    index:-1,
+    collect_item:'',
     atImageInfo:false,
     comment_list:[],//mock.comment,
     comment_next_page:'',
@@ -40,8 +40,8 @@ const imageGroup={
     SET_CONTINUE:(state,data)=>{
       state.continue_getImage=data
     },
-    SET_INDEX:(state,data)=>{
-      state.index=data
+    SET_COLLECT_ITEM:(state,data)=>{
+      state.collect_item=data
     },
     SET_NEXT_SEARCH:(state,data)=>{
       state.next_search=data
@@ -77,7 +77,7 @@ const imageGroup={
                commit('SET_CONTINUE',false)
              }
              else{
-               commit('SET_NEXT_SEARCH',res.data.next.split("111.231.230.54")[1]);
+               commit('SET_NEXT_SEARCH',res.data.next.split("111.231.230.54/")[1]);
              }
              commit('SET_IMAGEGROUPI',res.data.results);
              resolve()

@@ -106,7 +106,6 @@
       },
       methods:{
         setLike(id,index){
-          // console.log('if_like:',this.photos[index].if_like)
           let data=new FormData();
           data.append('image',id)
           data.append('user',this.$store.state.user.userInfo.id)

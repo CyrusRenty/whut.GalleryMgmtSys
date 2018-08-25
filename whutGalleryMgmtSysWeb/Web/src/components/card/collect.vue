@@ -2,7 +2,7 @@
     <div class="collect" v-if="show_collect">
      <div class="content-warp">
        <div class="content">
-        <div class="head"><span class="head-title">添加到收藏夹</span><span class="head-delete" @click="closeCollect">×</span></div>
+        <div class="head"><span class="head-title">添加到收藏夹</span></div><span class="head-delete" @click="closeCollect">×</span>
          <div class="collect-list-warp">
            <ul class="collect-list">
              <li v-for="(item,index) in collect_list" class="list-item" :class="{collected:item.if_collect}">
@@ -52,22 +52,6 @@
         },
         closeCollect(){
           this.$store.commit('SET_COLLECT_SHOW')
-          // if(this.$router.currentRoute.name!=='image'){
-          //   var signal = false
-          //   this.collect_list.forEach((item)=>{
-          //     if(item.if_collect !== false){
-          //       this.$store.state.imageGroup.imageInfo.if_collect=true
-          //       this.$store.state.imageGroup.image[this.$store.state.imageGroup.index].if_collect=true
-          //       signal = true
-          //       return
-          //     }
-          //   })
-          //   if (!signal) {
-          //     this.$store.state.imageGroup.imageInfo.if_collect = false
-          //     this.$store.state.imageGroup.image[this.$store.state.imageGroup.index].if_collect = false
-          //   }
-          // }
-
           document.body.style.overflow = 'auto';
         },
         //添加/删除图片 刷新收藏夹
@@ -78,10 +62,12 @@
           data.append('user',cookie.getCookie('user_id'))
           if(status){
             deleteImage(this.collect_list[index].if_collect).then(()=>{
-              this.$store.commit('SET_COLLECT_LIST',this.image_id)
+              //this.$store.commit('SET_COLLECT_LIST',this.image_id)
+              this.collect_list[index].if_collect=false
               if(this.$router.currentRoute.name!=='image') {
-                this.$store.state.imageGroup.image[this.$store.state.imageGroup.index].collection_nums--
-                this.$store.state.imageGroup.image[this.$store.state.imageGroup.index].if_collect=false
+                this.$store.state.imageGroup.collect_item.collection_nums--
+                if(!this.checkCollect())
+                this.$store.state.imageGroup.collect_item.if_collect=false
               }else{
                 this.$store.state.imageGroup.imageInfo.collection_nums--
                 this.$store.state.imageGroup.imageInfo.if_collect = false
@@ -92,10 +78,10 @@
           }else{
             addImage(data).then((res)=>{
               this.collect_list[index].if_collect=res.data.id
-              this.$store.commit('SET_COLLECT_LIST',this.image_id)
+              //this.$store.commit('SET_COLLECT_LIST',this.image_id)
               if(this.$router.currentRoute.name!=='image'){
-                this.$store.state.imageGroup.image[this.$store.state.imageGroup.index].collection_nums++
-                this.$store.state.imageGroup.image[this.$store.state.imageGroup.index].if_collect=res.data.id
+                this.$store.state.imageGroup.collect_item.collection_nums++
+                this.$store.state.imageGroup.collect_item.if_collect=res.data.id
               }else{
                 this.$store.state.imageGroup.imageInfo.collection_nums++
                 this.$store.state.imageGroup.imageInfo.if_collect=res.data.id
@@ -105,6 +91,13 @@
             })
           }
         },
+        checkCollect(){
+          for(let i=0;i<this.collect_list.length;i++){
+            if(this.collect_list[i].if_collect)
+              return true
+          }
+          return false
+        }
       },
     }
 </script>
@@ -133,13 +126,15 @@
     width: 29.25rem;
     height: 37.5rem;
     background: #fff;
-    padding:2.8rem 3rem 2.25rem;
+    padding:2.8rem 0 2.25rem;
   }
   .head{
     display: flex;
     align-items: center;
     flex-direction: row;
     justify-content: space-between;
+    margin-bottom: 1rem;
+    padding: 0 3rem;
   }
   .head-title{
     flex-direction: row;
@@ -149,13 +144,20 @@
     font-weight: 600;
   }
   .head-delete{
-    font-size: 2rem;
+    position: absolute;
+    width: 1.5rem;
+    height: 1.5rem;
+    right: 2rem;
+    top: 1rem;
+    font-size: 3rem;
     cursor: pointer;
     color:#b3b3b3;
   }
   .collect-list-warp{
-    height: 28.1rem;
-    overflow: auto;
+    height: 25rem;
+    overflow-y: auto;
+    margin-bottom: 1.5rem;
+    padding: 0 3rem ;
   }
   .collect-list-warp::-webkit-scrollbar{
     width: .5rem;
@@ -171,7 +173,7 @@
     display: flex;
     align-items: center;
     flex-direction: column;
-
+    width: 23.25rem;
   }
   .list-item{
     -webkit-border-radius: 0.25rem;
@@ -179,8 +181,8 @@
     border-radius:0.25rem;
     display: flex;
     justify-content: space-between;
-    width: 23.5rem;
-    height: 5rem;
+    width: 23.25rem;
+    height: 4.5rem;
     margin-bottom: 0.625rem;
     background: #F0F1F2;
     background-size: cover;
@@ -193,17 +195,19 @@
     flex-direction: column;
     padding-left: 1.25rem;
     overflow: hidden;
-    padding-top: .5rem;
+    padding-top: .8rem;
   }
   .item-num{
     display:flex;
     justify-content: flex-start;
     padding-top: 0.625rem;
+    font-size: .8rem;
   }
   .item-name{
     display: flex;
     justify-content: flex-start;
-    font-size:1.5625rem;
+    font-size:1rem;
+    font-weight: bold;
   }
   .list-right{
     display: flex;
@@ -214,8 +218,8 @@
   }
   .list-right img{
     cursor: pointer;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
   }
   .content-bottom{
     display: flex;
@@ -223,11 +227,11 @@
 
   }
   .add-new{
-    height: 2.5rem;
-    width: 9.375rem;
+    height:3rem;
+    width: 11.25rem;
     background: #9AD3E2;
     color: #fff;
-    line-height:2.5rem ;
+    line-height:3rem ;
     border-radius: 1.5625rem;
     cursor: pointer;
     font-weight: 600;

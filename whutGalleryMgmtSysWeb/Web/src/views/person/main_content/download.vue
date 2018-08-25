@@ -1,5 +1,18 @@
 <template>
   <div class="person-download clear width" v-if="photos">
+    <div class="fan-follow">
+      <div class="top">
+        <a @click="changeShow">我的粉丝({{fans.length}})</a>
+        <a @click="changeShow">我的关注({{my_follow.length}})</a>
+      </div>
+      <div v-if="show_fan">
+        <div v-for="item in fans">{{item.fan.username}}</div>
+      </div>
+      <div v-if="!show_fan">
+        <div v-for="item in my_follow">{{item.follow.username}}</div>
+      </div>
+    </div>
+
       <div class="total-num">共{{count}}作品</div>
       <div class="image-item " v-for="(photo,index) in photos" :key="index" >
         <div  class="item-content" :style="{'background-image':'url(' + photo.image.image + ')','background-repeat':'no-repeat','background-size':'cover','background-position':'center' }">
@@ -33,6 +46,7 @@
 </template>
 <script>
   import {setImageInfo,setDownload} from "../../../utils/user";
+  import {getFans, getMyFollow} from "../../../api/get";
 
   export default {
         name: "download",
@@ -40,6 +54,9 @@
           return {
             sw:true,
             no_result:false,
+            fans:[],
+            my_follow:[],
+            show_fan:true
           }
       },
       computed:{
@@ -57,6 +74,10 @@
           console.log(res)
         })
         window.addEventListener('scroll',this.getImage)
+      },
+      mounted(){
+          this.getFans()
+        this.getMyFollow()
       },
       destroyed(){
         window.removeEventListener('scroll',this.getImage)
@@ -79,6 +100,20 @@
         },
         setDownload(id){
           setDownload(id)
+        },
+        getFans(){
+          getFans().then((res)=>{
+            this.fans=res.data
+          })
+        },
+        getMyFollow(){
+          getMyFollow().then((res)=>{
+              this.my_follow=res.data
+            }
+          )
+        },
+        changeShow(){
+          this.show_fan=!this.show_fan
         }
       },
 
@@ -86,4 +121,9 @@
 </script>
 
 <style scoped>
+  .fan-follow{
+    height: 50rem;
+    padding: 5rem 6rem;
+    text-align: left;
+  }
 </style>

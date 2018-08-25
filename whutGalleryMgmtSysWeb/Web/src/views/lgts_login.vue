@@ -93,7 +93,7 @@
 
     </div>
     <div class="copyright">
-      Copyright©&nbsp;&nbsp;&nbsp;2018&nbsp;&nbsp;&nbsp;武汉理工大学
+      Copyright©&nbsp;&nbsp;&nbsp;2018&nbsp;&nbsp;&nbsp;共青团武汉理工大学委员会宣传部
     </div>
   </div>
 </template>

@@ -8,7 +8,7 @@
           <div class="hint">{{hint_folder_name}}</div>
         </div>
         <div class="add-bottom">
-          <div class="confirm" @click="confirm">确定</div><div class="cancel" @click="cancel">取消</div>
+          <div class="confirm" @click="confirm">确定</div><div class="cancel" @click="cancel">返回</div>
           <div class="hint">{{hint_result}}</div>
         </div>
       </div>
@@ -37,9 +37,11 @@
               document.body.style.overflow='hidden'
           }
       },
-      // destroyed(){
-      //     document.body.style.overflow='auto'
-      // },
+      mounted(){
+          this.$nextTick(()=>{
+            // this.$refs['folder_name'].focus()
+          })
+      },
       methods:{
           changeShow(){
             this.show_add=!this.show_add
@@ -70,9 +72,10 @@
                   this.hint_result='添加成功'
                   this.$store.dispatch('SetCollection')
                 }
-
                 else this.hint_result='添加失败'
                 setTimeout(this.clean_hint,1800)
+                if(this.$router.currentRoute.name!=='person_collection')
+                this.$store.commit('SET_COLLECT_LIST',this.$store.state.imageGroup.image_id)
               }).catch(()=>{
                 this.hint_result='添加失败'
                 setTimeout(this.clean_hint,1800)

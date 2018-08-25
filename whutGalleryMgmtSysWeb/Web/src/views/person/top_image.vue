@@ -3,8 +3,8 @@
     <div id="centerBg" class="pic-box"></div>
     <div  class="user-box">
       <div class="center-tx" :style="{'background-image':`url(${userInfo.image})`}">
-        <div id="fan"><span>粉丝</span><br/><span>{{userInfo.fan_nums}}</span></div>
-        <div id="follow"><span class="">关注</span><br/><span>{{userInfo.follow_nums}}</span></div>
+        <div class="person-data person-fan" @click="goFanFollow"><span>粉丝</span><br/><span>{{userInfo.fan_nums}}</span></div>
+        <div class="person-data person-follow" @click="goFanFollow"><span class="">关注</span><br/><span>{{userInfo.follow_nums}}</span></div>
       </div>
     </div>
     <div id="centerbtn">
@@ -30,7 +30,9 @@
 
     },
       methods:{
-
+        goFanFollow(){
+          this.$router.push({name:'person_download'})
+        }
       }
     }
 </script>
@@ -69,14 +71,15 @@
   .lh4r{
     line-height: 4rem ;
   }
-  #fan{
+  .person-data{
     position: absolute;
     top:0;
+    cursor: pointer;
+  }
+  .person-fan{
     left: -8.5rem;
   }
-  #follow{
-    position: absolute;
-    top:0;
+  .person-follow{
     right: -8.5rem;
   }
   .person-desc{

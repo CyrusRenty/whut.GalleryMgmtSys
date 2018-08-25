@@ -15,8 +15,8 @@
             <i class="user-icon" :title="'进入'+userInfo.username+'的主页'" :style="{'background-image':'url(' + userInfo.image + ')','background-repeat':'no-repeat','background-size':'cover','background-position':'center' }"  @click="getInOtherUser(userInfo.id)"></i>
             <div class="user-name">{{userInfo.username}}</div>
             <div  @click="setFollow(userInfo.id)">
-              <div class="unFollow follow" v-if="!userInfo.if_follow" title="关注">+关注</div>
-              <div class="followed follow" v-if="userInfo.if_follow" title="取消关注">已关注</div>
+              <div class="unFollow follow" v-if="!imageInfo.if_follow" title="关注">+关注</div>
+              <div class="followed follow" v-if="imageInfo.if_follow" title="取消关注">已关注</div>
             </div>
           </div>
           <div class="data1">

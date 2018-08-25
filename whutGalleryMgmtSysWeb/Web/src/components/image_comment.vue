@@ -399,6 +399,7 @@
   }
   .comment-bottom::-webkit-scrollbar-button{
     display: none;
+    -moz-appearance: none;
   }
   .comment-bottom::-webkit-scrollbar{
     width: .5rem;

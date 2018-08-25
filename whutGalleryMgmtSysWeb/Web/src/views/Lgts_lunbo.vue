@@ -78,7 +78,6 @@
 </script>
 
 <style scoped>
-  a:active  {text-decoration:none;}
   ul.slide-pages {
     border-radius: 50%;
   }
@@ -109,9 +108,8 @@
   }
   .arrow{
     display: inline-block;
-    width:3rem;
+    width:2.5rem;
     height: 3rem;
-
   }
   .arrow:hover{
     display: inline-block;
@@ -136,7 +134,7 @@
   .slide-show {
     position: relative;
     width: 100%;
-    height: 36rem;
+    height: 25rem;
     overflow: hidden;
   }
   @media screen and (max-width: 700px){

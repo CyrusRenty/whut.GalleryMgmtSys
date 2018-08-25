@@ -81,8 +81,8 @@
         this.$store.commit('SET_CONTINUE',true);
         this.$store.commit('SET_STATUS','special');
         if(index2===0)
-          this.$store.commit('SET_NEXT_SEARCH',`/big_group/${id}/?page=1`);
-        else this.$store.commit('SET_NEXT_SEARCH',`/group/${id}/?page=1`);
+          this.$store.commit('SET_NEXT_SEARCH',`group/?page=1`);
+        else this.$store.commit('SET_NEXT_SEARCH',`group/${id}/?page=1`);
         this.$store.commit('SET_IMAGEGROUP');
         this.$store.dispatch('setImageGroupT').then(()=>{
           if(!this.$store.state.imageGroup.image.length)

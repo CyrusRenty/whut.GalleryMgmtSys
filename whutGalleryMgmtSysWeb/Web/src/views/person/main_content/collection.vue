@@ -32,16 +32,23 @@
         <img src="../../../assets/noResult.png" class="no-result-img">
         <p class="no-result-word">你还没有收藏夹，新建一个吧</p>
       </div>
+      <confirm ref="set_comfirm" :title="confirm"/>
     </div>
 </template>
 
 <script>
   import mock from '../../../utils/mock'
   import add_folder_card from '../../../components/card/add_folder_card'
+  import confirm from '../../../components/confirm_box'
   import {deleteFolder} from "../../../api/action";
     export default {
         name: "collection",
-      components:{add_folder_card},
+      components:{add_folder_card,confirm},
+      data(){
+          return {
+            confirm:{title:'确定删除此收藏夹'}
+          }
+      },
       computed:{
         collect_list(){
           return this.$store.state.user.collect_his
@@ -59,10 +66,10 @@
           this.$router.push('/tslg/person/folder_content')
         },
         deleteFolder(id,index){
-          deleteFolder(id).then(()=>{
-            this.collect_list.splice(index,1)
-          })
-        }
+          this.confirm.id=id
+          this.confirm.index=index
+          this.$refs.set_comfirm.showConfirm()
+        },
     }
   }
 </script>
@@ -70,7 +77,6 @@
 <style scoped>
 
 .person-collection{
-
   margin: 0 auto;
 }
 .total-num{

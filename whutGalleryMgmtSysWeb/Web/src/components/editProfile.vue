@@ -1,7 +1,7 @@
 <template>
   <div class="editBox">
     <i class="deletePage" @click="cancel"></i>
-  <div id="editProfile" ref="editpf"  :style="styleObject">
+  <div id="editProfile" class="clear" ref="editpf"  :style="styleObject">
     <div id="user-image">
       <vue-avatar :scale="scale" ref="vueavatar" @image-ready="onImageReady"/>
       <br>
@@ -187,7 +187,7 @@
             this.$refs.change_QQ.style.border='0.0625rem solid #9ad3e2'
           },
           inputDesc(){
-            if(this.desc.length>80){
+            if(this.desc.length>20){
               let length=0;
               for(var i=0;i<this.desc.length;i++){
                 var a=this.desc.charAt(i);
@@ -195,7 +195,7 @@
                   length+=2
                 }else length+=1
               }
-              if(length>80){
+              if(length>20){
                 this.hint_desc='简介过长'
                 this.$refs.change_desc.style.border='#ff0000 0.0625rem solid'
               }
@@ -237,7 +237,7 @@
 .editBox{
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.8);
+  background-color: rgba(0,0,0,0.6);
   position: fixed;
   top: 0;
   left: 0;
@@ -259,7 +259,7 @@
   background-color: #fff;
   text-indent: 1rem;
   font-size: 1.2rem;
-  border: 1px solid #cecece;
+  border:0.0625rem solid #cecece;
 }
 .short-width{
   width: 47%;
