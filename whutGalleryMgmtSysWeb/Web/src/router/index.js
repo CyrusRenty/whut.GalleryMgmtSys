@@ -112,7 +112,7 @@ router.beforeEach((to,from,next)=>{
     store.dispatch('setOtherUserInfo',id)
     store.dispatch('SetOtherUserImages')
   }
-  if(!store.state.user.userInfo){
+  if(!store.state.user.userInfo&&cookie.getCookie('user_id')){
     store.dispatch('GetUserInfo')
     if(to.name==='image'){
       store.commit('SET_IMAGE_ID',to.params.id)
