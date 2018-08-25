@@ -1,6 +1,6 @@
 <template>
   <div>
-  <div class="declareHead">
+  <div class="declareHead" ref="zcsm_header">
     <div class="head-left">
       <div class="logo clear"></div><span class="head-line"></span><span class="zcsm-title">{{title}}</span>
     </div>
@@ -45,6 +45,9 @@
     </p>
     </div>
   </div>
+    <div class="copyright">
+      Copyright©&nbsp;&nbsp;&nbsp;2018&nbsp;&nbsp;&nbsp;武汉理工大学
+    </div>
   </div>
 </template>
 
@@ -53,8 +56,18 @@
         name: "zcsm",
       data(){
           return {
-            title:'注册声明'
+            title:'注册声明',
+            head_style:{
+              position:'fixed',
+              top:'0',
+            }
           }
+      },
+      mounted(){
+        window.addEventListener('scroll',this.setHead)
+      },
+      destroyed(){
+          window.removeEventListener('scroll',this.setHead)
       },
       methods:{
         goLogin(){
@@ -63,6 +76,14 @@
         goRegister(){
           this.$store.commit('SET_DO_LOGIN',false)
           this.$router.push({name:'login'})
+        },
+        setHead(){
+          if(document.documentElement.scrollTop>80){
+            this.$refs.zcsm_header.style.position='fixed'
+            this.$refs.zcsm_header.style.top=0
+          }else{
+            this.$refs.zcsm_header.style.position='relative'
+          }
         }
       }
     }
@@ -70,11 +91,6 @@
 
 <style scoped>
   /*声明页面的头部样式*/
-  body{
-    background-color: #f7fafb;
-    padding: 0;
-    margin: 0;
-  }
   .declareHead{
     height:5rem;
     padding:0 10rem;
@@ -82,6 +98,8 @@
     justify-content:space-between;
     border-bottom: 0.0625rem solid #cecece;
     align-items: center;
+    width: 100%;
+    background: #fff;
   }
   .head-left{
     display: flex;
@@ -135,7 +153,7 @@
     width:100rem;
     line-height: 2rem;
     font-size: 1.1rem;
-    margin:3rem auto 0;
+    margin:3rem auto 5rem;
   }
   .declareDetail h2,h3{
 
@@ -184,6 +202,15 @@
     font-size: 1.1rem;
     display: inline-block;
     margin: 0;
+  }
+  .copyright {
+    height: 4rem;
+    line-height: 4rem;
+    text-align: center;
+    font-size: 1rem;
+    color: #4a4a4a;
+    width: 100%;
+   border-top: 0.0625rem solid #cecece;
   }
 
 </style>
