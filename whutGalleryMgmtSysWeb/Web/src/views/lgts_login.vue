@@ -546,7 +546,7 @@
     font-size: 1rem;
     color: #4a4a4a;
     position: fixed;
-    bottom: 1rem;
+    bottom: 1vh;
     width: 100%;
   }
 
