@@ -9,7 +9,7 @@ from django.views.generic.base import View
 from django.contrib.auth import get_user_model
 from django.shortcuts import render
 from django.contrib.auth.hashers import make_password
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, StreamingHttpResponse
 from rest_framework.pagination import PageNumberPagination
 import json
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle  # 限速
@@ -19,7 +19,7 @@ from .serializer import (LikeSerializer, FollowSerializer, CollectSerializer, Do
                          ApplicationListSerializer, ApplicationCreateSerializer, ApplicationUpdateSerializer,
                          ReportSerializer)
 from .models import LikeShip, Follow, UserFolderImage, DownloadShip, CommentLike, Application
-from users.models import EmailVerifyRecord, UserMessage
+from users.models import EmailVerifyRecord, UserMessage, Org
 from images.models import ImageModel
 from my_utils.send_email import send_register_email
 
@@ -140,6 +140,16 @@ class DownloadPagination(PageNumberPagination):
     max_page_size = 100
 
 
+def file_iterator(file_name, chunk_size=512):
+    with open(file_name, 'rb') as f:
+        while True:
+            c = f.read(chunk_size)
+            if c:
+                yield c
+            else:
+                break
+
+
 class DownloadViewset(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     """
     create:
@@ -166,12 +176,7 @@ class DownloadViewset(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.G
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         ship = self.perform_create(serializer)
-
-        re_dict = serializer.data
-        re_dict['url'] = 'http://' + self.request._request.META['HTTP_HOST'] + ship.image.image.url
-
-        headers = self.get_success_headers(serializer.data)
-        return Response(re_dict, status=status.HTTP_201_CREATED, headers=headers)
+        return StreamingHttpResponse(file_iterator(ship.image.image.path))
 
     def perform_create(self, serializer):
         return serializer.save()
@@ -342,17 +347,35 @@ class ChangePasswordView(View):
         return render(request, "password_reset.html", {"msg": "修改成功!"})
 
 
+class OrgImage(View):
+    def get(self, request, user_id):
+        """
+        认证 
+        """
+        if request.user.is_authenticated and request.user.is_staff:
+            images = ImageModel.objects.filter(user_id=user_id, if_active=1)
+            target_user = User.objects.get(id=user_id)
+            org = Org.objects.filter(user_id=target_user.id)[0]
+            return render(request, 'images.html', {
+                "user": target_user,
+                "images": images,
+                "action": "org",
+                "org": org,
+            })
+
+
 class UserImageView(View):
     def get(self, request, user_id):
         """
         用户签约审查界面的跳转
         """
         if request.user.is_authenticated and request.user.is_staff:
-            images = ImageModel.objects.filter(user_id=user_id, if_active=True)
+            images = ImageModel.objects.filter(user_id=user_id, if_active=1)
             target_user = User.objects.get(id=user_id)
             return render(request, 'images.html', {
                 "user": target_user,
                 "images": images,
+                "action": "sign",
             })
 
 
@@ -363,15 +386,22 @@ class CheckView(View):
         """
         res = request.POST.get('radio')
         user_id = request.POST.get('user')
-        ship = Application.objects.get(user_id=int(user_id))
-        if res:
-            if res == 'n':
-                ship.status = 4
-            elif res == 'y':
-                ship.status = 3
-            ship.save()
-            # 很奇怪, 信号量没有起作用, 所以在这里直接改
-            user = ship.user
-            user.if_sign = True
-            user.save()
+        action = request.POST.get('action')
+        if action == 'org':
+            ship = Org.objects.get(user_id=int(user_id))
+            if res:
+                if res == 'n':
+                    ship.status = '3'
+                elif res == 'y':
+                    ship.status = '2'
+
+            return HttpResponseRedirect('/admin/')
+        else:
+            ship = Application.objects.get(user_id=int(user_id))
+            if res:
+                if res == 'n':
+                    ship.status = '4'
+                elif res == 'y':
+                    ship.status = '3'
+                ship.save()
             return HttpResponseRedirect('/admin/')

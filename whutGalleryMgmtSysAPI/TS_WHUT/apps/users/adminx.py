@@ -14,7 +14,7 @@ class MainDashboard(object):
             {"type": "qbutton", "title": "快速开始",
              "btns": [{"title": "上传图片", "url": '/admin/images/imagemodel/add/'},
                       {"title": "新建用户", "url": '/admin/users/userprofile/add/'}]},
-            {"type": "list", "model": "images.ImageModel", "title": "等待审核图片", "params": {"_p_if_active": False}},
+            {"type": "list", "model": "images.ImageModel", "title": "等待审核图片", "params": {"_p_if_active": 2}},
         ],
         [
             {"type": "list", "model": "operations.Application", "title": "等待审核用户", "params": {"_p_status": 2}},
@@ -48,7 +48,7 @@ class UserProfileAdmin(object):
     form_layout = (
         Main(
             Fieldset('',
-                     'username', 'password',
+                     'username', 'password', 'org_name',
                      css_class='unsort no_title'
                      ),
             Fieldset('关键信息',
@@ -65,7 +65,7 @@ class UserProfileAdmin(object):
         ),
         Side(
             Fieldset('状态',
-                     'is_active', 'is_staff', 'is_superuser', 'if_sign'
+                     'is_active', 'is_staff', 'is_superuser', 'if_sign', 'if_cer'
                      ),
         )
     )
@@ -104,7 +104,7 @@ class FolderAdmin(object):
 
 
 class OrgAdmin(object):
-    list_display = ('name', 'status', 'user', 'teacher', 'add_time')
+    list_display = ('name', 'status', 'user', 'teacher', 'url')
     search_fields = ('name', 'teacher')
     list_filter = ('name', 'add_time', 'status')
     readonly_fields = ('add_time', 'user')

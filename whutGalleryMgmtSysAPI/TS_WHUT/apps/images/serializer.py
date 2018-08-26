@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ImageModel, BannerModel, Comment, SearchWord, SmallGroups, GroupImage, Groups
+from .models import ImageModel, BannerModel, Comment, SearchWord, Groups
 from django.contrib.auth import get_user_model
 from operations.models import LikeShip, UserFolderImage, Follow, CommentLike
 from users.models import UserMessage
@@ -29,7 +29,7 @@ class UserBrifSerializer(serializers.ModelSerializer):
     upload_nums = serializers.SerializerMethodField()
 
     def get_upload_nums(self, obj):
-        return ImageModel.objects.filter(user=obj, if_active=True).count()
+        return ImageModel.objects.filter(user=obj, if_active=1).count()
 
     class Meta:
         model = User
@@ -52,7 +52,9 @@ class ImageSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         # 图片链接
-        return 'http://' + self.context['request']._request.META['HTTP_HOST'] + obj.image['avatar'].url
+        if self.context.get('water_image'):
+            return '/media/images/main/' + obj.image.url.rsplit('/', 1)[1]
+        return obj.image['avatar'].url
 
     def get_if_like(self, obj):
         # 是否点赞图片
@@ -141,14 +143,22 @@ class CommentListSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class SmallGroupListSerializer(serializers.ModelSerializer):
+class GroupListSerializer2(serializers.ModelSerializer):
     class Meta:
-        model = SmallGroups
+        model = Groups
         fields = '__all__'
 
 
 class GroupListSerializer(serializers.ModelSerializer):
-    groups = SmallGroupListSerializer(many=True)
+    kids = GroupListSerializer2(many=True)
+
+    class Meta:
+        model = Groups
+        fields = '__all__'
+
+
+class GroupList0Serializer(serializers.ModelSerializer):
+    kids = GroupListSerializer(many=True)
 
     class Meta:
         model = Groups

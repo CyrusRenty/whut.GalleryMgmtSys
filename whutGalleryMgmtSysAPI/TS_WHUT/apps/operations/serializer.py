@@ -19,7 +19,7 @@ class ReportSerializer(serializers.ModelSerializer):
 
 class CollectSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
-        if attrs['user'] != self.context['request'].user or not attrs['image'].if_active:
+        if attrs['user'] != self.context['request'].user or not attrs['image'].if_active == 1:
             raise serializers.ValidationError('没有权限')
         return attrs
 
@@ -42,7 +42,7 @@ class LikeSerializer(serializers.ModelSerializer):
         fields = ('user', 'image', 'id')
 
     def validate(self, attrs):
-        if attrs['user'] != self.context['request'].user or not attrs['image'].if_active:
+        if attrs['user'] != self.context['request'].user or not attrs['image'].if_active == 1:
             raise serializers.ValidationError('没有权限')
         return attrs
 
@@ -65,7 +65,7 @@ class LikeListSerializer(serializers.ModelSerializer):
 
 class DownloadSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
-        if not attrs['image'].if_active:
+        if not attrs['image'].if_active == 1:
             raise serializers.ValidationError('没有权限')
         attrs['user'] = self.context['request'].user
         return attrs

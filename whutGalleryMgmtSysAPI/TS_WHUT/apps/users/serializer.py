@@ -32,7 +32,7 @@ class FolderOneSerializer(serializers.ModelSerializer):
             image = ship.image
             data.append({
                 "ship_id": ship.id,
-                "image": 'http://' + self.context['request']._request.META['HTTP_HOST'] + image.image['avatar'].url,
+                "image": image.image['avatar'].url,
                 "add_time": image.add_time,
                 "desc": image.desc,
                 "user": image.user.id,
@@ -57,13 +57,12 @@ class FolderListSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         data = []
-        base_url = 'http://' + self.context['request']._request.META['HTTP_HOST']
         ships = UserFolderImage.objects.filter(folder_id=obj.id)
         for i, ship in enumerate(ships):
             if i == 4:
                 return data
             data.append({
-                "url": base_url + ship.image.image['avatar'].url
+                "url": ship.image.image['avatar'].url
             })
         return data
 
@@ -111,12 +110,12 @@ class UserListSerializer(serializers.ModelSerializer):
     def get_images(self, obj):
         data = []
         i = 0
-        for image in ImageModel.objects.filter(user=obj, if_active=True)[::-1]:
+        for image in ImageModel.objects.filter(user=obj, if_active=1)[::-1]:
             i += 1
             if i > 3:
                 return data
             data.append({
-                "url": 'http://' + self.context['request']._request.META['HTTP_HOST'] + image.image['avatar'].url,
+                "url": image.image['avatar'].url,
                 "id": image.id,
             })
         return data
@@ -169,7 +168,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         if attrs.get("password"):
             attrs['password'] = make_password(attrs['password'])
         if attrs.get("email"):
-            user = self.context['request'].user.if_active
+            user = self.context['request'].user
             user.is_active = False
             user.save()
         return attrs

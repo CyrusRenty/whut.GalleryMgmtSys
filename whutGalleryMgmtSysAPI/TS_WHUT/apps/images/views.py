@@ -13,9 +13,10 @@ from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle  # 限速
 import jieba
 
-from .models import ImageModel, BannerModel, Comment, SearchWord, Groups, SmallGroups, GroupImage
+from .models import ImageModel, BannerModel, Comment, SearchWord, Groups, GroupImage
 from .serializer import (ImageSerializer, ImageCreateSerializer, BannerSerializer, CommentListSerializer,
-                         CommentCreateSerializer, BannerOneSerializer, SearchWordSerializer, GroupListSerializer)
+                         CommentCreateSerializer, BannerOneSerializer, SearchWordSerializer, GroupListSerializer,
+                         GroupList0Serializer)
 from .filters import ImageFilter, CommentFilter
 
 
@@ -32,6 +33,28 @@ class ImagePagination(PageNumberPagination):
     page_query_param = "page"
 
 
+def check_cates(instance):
+    """
+    这里迭代查询一个类别的里层类别
+    :param instance: Group对象
+    :return: tuple
+    """
+    i = instance.level
+    if i > 1:
+        instance = Groups.objects.filter(parent=instance, if_show=True)
+        i -= 1
+        while i > 1:
+            instance = Groups.objects.filter(parent__in=instance, if_show=True)
+            i -= 1
+        # 如果涉及到增加第三层
+        q2 = Groups.objects.filter(parent__in=instance, if_show=True)
+    else:
+        # 如果涉及到增加第三层
+        q2 = Groups.objects.filter(parent=instance, if_show=True)
+
+    return instance, q2
+
+
 class GroupsViewset(mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     """
     list:
@@ -41,9 +64,18 @@ class GroupsViewset(mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.G
     """
     throttle_classes = (UserRateThrottle, AnonRateThrottle)
     serializer_class = GroupListSerializer
-    filter_backends = (filters.OrderingFilter,)
     ordering_fields = ('add_time', 'like_nums', 'collection_nums')
-    queryset = Groups.objects.filter(if_show=True)
+
+    def get_queryset(self):
+        if self.action == 'list':
+            return Groups.objects.filter(if_show=True, level=2)
+        return Groups.objects.filter(if_show=True)
+
+    @property
+    def filter_backends(self):
+        if self.action == 'list':
+            return []
+        return [filters.OrderingFilter]
 
     @property
     def pagination_class(self):
@@ -53,16 +85,32 @@ class GroupsViewset(mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.G
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        groups = SmallGroups.objects.filter(group=instance)
 
-        q = Q()
-        q.connector = 'OR'
+        if not instance.if_show:
+            return Response({"error": "该层不显示"}, status=400)
 
-        for group in groups:
-            q.children.append(('group', group))
+        q, q2 = check_cates(instance)
 
-        small_groups = GroupImage.objects.filter(q)
-        images = ImageModel.objects.filter(groupimage__in=small_groups, if_active=True)
+        # 如果涉及到增加第三层
+        if q2.count():
+            if isinstance(q, Groups):
+                ship = GroupImage.objects.filter(Q(group=q) | Q(group__in=q2))
+            else:
+                ship = GroupImage.objects.filter(Q(group__in=q) | Q(group__in=q2))
+        elif isinstance(q, Groups):
+            ship = GroupImage.objects.filter(group=q)
+        else:
+            ship = GroupImage.objects.filter(group__in=q)
+
+        images = ImageModel.objects.filter(groupimage__in=ship, if_active=1)
+
+        # 格式筛选,用户名筛选
+        pattern = request.GET.get('pattern')
+        user = request.GET.get('user')
+        if pattern:
+            images = images.filter(pattern=pattern)
+        if user:
+            images = images.filter(user_id=int(user))
 
         queryset = self.filter_queryset(images)
         page = self.paginate_queryset(queryset)
@@ -76,35 +124,63 @@ class GroupsViewset(mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.G
 
     def get_serializer_class(self):
         if self.action == 'list':
+            # 如果有第三层
+            if Groups.objects.filter(level=0).count():
+                return GroupList0Serializer
             return GroupListSerializer
         return ImageSerializer
 
 
-class SmallGroupsViewset(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+def filter_cate(cates):
+    """根据分类筛选图片,例如url末尾是?cates=人物,生活,菁菁校园
+    :param cates: cates
+    :return: queryset
     """
-    retrieve:
-        获取某个小类别全部图片
+    cates = cates.split(',')
+    queryset = ImageModel.objects.filter(groupimage__name=cates[0])
+    if not queryset.count():
+        groups = Groups.objects.filter(name=cates[0])
+        if groups.count():
+            groups = Groups.objects.filter(parent=groups[0])
+            queryset = ImageModel.objects.filter(groupimage__group__in=groups)
+
+    if len(cates) > 1:
+        for cate in cates[1:]:
+            start_nums = queryset.count()
+            queryset = queryset.filter(groupimage__name=cate)
+            end_nums = queryset.count()
+
+            # 如果是第一层类别
+            if start_nums == end_nums:
+                groups = Groups.objects.filter(name=cate)
+                if groups.count():
+                    groups = Groups.objects.filter(parent=groups[0])
+                    queryset = queryset.filter(groupimage__group__in=groups)
+
+    return queryset
+
+
+def save_hot_word(search_word):
     """
-    throttle_classes = (UserRateThrottle, AnonRateThrottle)
-    serializer_class = ImageSerializer
-    queryset = SmallGroups.objects.all()
-    filter_backends = (filters.OrderingFilter,)
-    ordering_fields = ('add_time', 'like_nums', 'collection_nums')
-    pagination_class = ImagePagination
+    保存搜索词 利用分词来检索
+    检索一共搜cates字段, name字段, desc字段, user.username字段.
+    :param search_word: 搜索词
+    :return: Q的对象
+    """
+    words = SearchWord.objects.filter(word=search_word)
+    if words.count():
+        words[0].num += 1
+    else:
+        SearchWord(word=search_word).save()
 
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        groups = GroupImage.objects.filter(group=instance)
-        images = ImageModel.objects.filter(groupimage__in=groups, if_active=True)
-
-        queryset = self.filter_queryset(images)
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(images, many=True)
-        return Response(serializer.data)
+    rows = ('cates', 'name', 'desc', 'user__username')
+    q = Q()
+    q.connector = 'OR'
+    for row in rows:
+        kws = jieba.cut_for_search(search_word)
+        for kw in kws:
+            q.children.append((row + '__icontains', kw))
+    return q
 
 
 class ImageViewset(mixins.ListModelMixin,
@@ -139,7 +215,7 @@ class ImageViewset(mixins.ListModelMixin,
         # 删除只能是上传者
         if self.action == 'destroy':
             return ImageModel.objects.filter(user=self.request.user)
-        return ImageModel.objects.filter(if_active=True)
+        return ImageModel.objects.filter(if_active=1)
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -148,39 +224,38 @@ class ImageViewset(mixins.ListModelMixin,
             return ImageCreateSerializer
         return ImageSerializer
 
+    def get_serializer_context(self):
+        """
+        重载, 目的是只有retrieve接口才会显示水印图, 其他应该是缩略图
+        专为/images/的retrieve接口设置一个信号,因为使用ImageSerializer的比较多
+        """
+        if self.action == 'retrieve':
+            return {
+                'request': self.request,
+                'format': self.format_kwarg,
+                'view': self,
+                'water_image': True
+            }
+        return {
+            'request': self.request,
+            'format': self.format_kwarg,
+            'view': self
+        }
+
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        # 筛选分类
+        cates = request.GET.get('cates')
+        if cates:
+            queryset = self.filter_queryset(filter_cate(cates))
+        else:
+            queryset = self.filter_queryset(self.get_queryset())
+
+        # 检索
         search = request.GET.get('search')
+        if queryset.count() and search:
+            queryset = queryset.filter(save_hot_word(search))
 
-        if queryset.count():
-            # 搜索使用两种方式, 一种是有逗号区分, 每个逗号切分的词就是关键词.
-            # 这一部分是为了给前端中分类做的.
-            # 另外一种就是利用分词来检索, 这一部分是为了给检索做的.
-            # 检索一共搜cates字段, name字段, desc字段, user.username字段.
-            if search:
-
-                # 搜索词数目加1, 或者创建搜索词
-                words = SearchWord.objects.filter(word=search)
-                if words.count():
-                    words[0].num += 1
-                else:
-                    SearchWord(word=search).save()
-
-                rows = ('cates', 'name', 'desc', 'user__username')
-                q = Q()
-                q.connector = 'OR'
-                for row in rows:
-                    if ',' in search:
-                        kws = search.replace(',', ' ').split()
-                        for kw in kws:
-                            q.children.append((row+'__icontains', kw))
-                    else:
-                        kws = jieba.cut_for_search(search)
-                        for kw in kws:
-                            q.children.append((row+'__icontains', kw))
-                queryset = queryset.filter(q)
-
-            page = self.paginate_queryset(queryset[::-1])
+        page = self.paginate_queryset(queryset[::-1])
 
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
@@ -192,7 +267,7 @@ class SearchWordViewset(mixins.ListModelMixin, viewsets.GenericViewSet):
         获取热搜词
     """
     throttle_classes = (UserRateThrottle, AnonRateThrottle)
-    queryset = BannerModel.objects.all().order_by("-num")[:10]
+    queryset = SearchWord.objects.all().order_by("-num")[:10]
     serializer_class = SearchWordSerializer
 
 
