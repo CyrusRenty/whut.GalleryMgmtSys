@@ -15,8 +15,7 @@ import jieba
 
 from .models import ImageModel, BannerModel, Comment, SearchWord, Groups, GroupImage
 from .serializer import (ImageSerializer, ImageCreateSerializer, BannerSerializer, CommentListSerializer,
-                         CommentCreateSerializer, BannerOneSerializer, SearchWordSerializer, GroupListSerializer,
-                         GroupList0Serializer)
+                         CommentCreateSerializer, BannerOneSerializer, SearchWordSerializer, GroupListSerializer)
 from .filters import ImageFilter, CommentFilter
 
 
@@ -125,8 +124,8 @@ class GroupsViewset(mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.G
     def get_serializer_class(self):
         if self.action == 'list':
             # 如果有第三层
-            if Groups.objects.filter(level=0).count():
-                return GroupList0Serializer
+            # if Groups.objects.filter(level=0).count():
+            #     return GroupList0Serializer
             return GroupListSerializer
         return ImageSerializer
 

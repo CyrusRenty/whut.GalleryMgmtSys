@@ -14,7 +14,7 @@ from rest_framework_jwt.views import obtain_jwt_token
 from rest_framework.routers import DefaultRouter
 
 from images.views import ImageViewset, BannerViewset, CommentViewset, SearchWordViewset, GroupsViewset
-from users.views import FolderViewset, UserViewset, HasUser, OrgViewset, DownloadImage
+from users.views import FolderViewset, UserViewset, HasUser, OrgViewset
 from operations.views import (LikeViewset, DownloadViewset, FollowViewset, ActiveUserView, ResetPwdView,
                               CollectViewset, FollowUserViewset, FanUserViewset, ForgetView, UserImageView, OrgImage,
                               ChangePasswordView, CommentLikeViewset, ApplicationViewset, CheckView, ReportViewset)

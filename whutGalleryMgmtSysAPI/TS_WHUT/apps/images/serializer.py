@@ -176,22 +176,28 @@ class CommentListSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class GroupListSerializer2(serializers.ModelSerializer):
-    class Meta:
-        model = Groups
-        fields = '__all__'
-
-
 class GroupListSerializer(serializers.ModelSerializer):
-    kids = GroupListSerializer2(many=True)
+    kids = serializers.SerializerMethodField()
 
-    class Meta:
-        model = Groups
-        fields = '__all__'
+    def get_kids(self, obj):
+        data = []
+        kids = Groups.objects.filter(parent=obj, if_show=True)
+        for kid in kids:
+            kid_data = []
 
+            kid_kids = Groups.objects.filter(parent=kid, if_show=True)
+            if kid_kids.count():
+                for kid_kid in kid_kids:
+                    kid_data.append({
+                        "name": kid.name,
+                        "id": kid.id,
+                    })
 
-class GroupList0Serializer(serializers.ModelSerializer):
-    kids = GroupListSerializer(many=True)
+            data.append({
+                "name": kid.name,
+                "id": kid.id,
+                "kids": kid_data
+            })
 
     class Meta:
         model = Groups
