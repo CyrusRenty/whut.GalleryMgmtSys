@@ -3,6 +3,8 @@ from .models import ImageModel, BannerModel, Comment, SearchWord, Groups
 from django.contrib.auth import get_user_model
 from operations.models import LikeShip, UserFolderImage, Follow, CommentLike
 from users.models import UserMessage
+import jieba
+from django.db.models import Q
 
 User = get_user_model()
 
@@ -36,6 +38,22 @@ class UserBrifSerializer(serializers.ModelSerializer):
         fields = ('image', 'id', 'username', 'upload_nums', 'fan_nums')
 
 
+def recommend_image(desc):
+    """
+    根据图片详情推荐图片
+    :param desc: 图片描述
+    :return: queryset
+    """
+    rows = ('cates', 'name', 'desc', 'user__username')
+    q = Q()
+    q.connector = 'OR'
+    for row in rows:
+        kws = jieba.cut_for_search(desc)
+        for kw in kws:
+            q.children.append((row + '__icontains', kw))
+    return ImageModel.objects.filter(q)
+
+
 class ImageSerializer(serializers.ModelSerializer):
     user = UserBrifSerializer()
     image = serializers.SerializerMethodField()
@@ -45,10 +63,25 @@ class ImageSerializer(serializers.ModelSerializer):
     height = serializers.SerializerMethodField()
     width = serializers.SerializerMethodField()
     size = serializers.SerializerMethodField()
+    recommend = serializers.SerializerMethodField()
 
     def get_size(self, obj):
         # 图片大小
         return obj.image.size
+
+    def get_recommend(self, obj):
+        """推荐图片"""
+        # 如果不是图片详情
+        data = []
+        if not self.context.get('water_image'):
+            return data
+        images = recommend_image(obj.desc)
+        for image in images[:5]:
+            data.append({
+                'id': image.id,
+                "image": image.image['avatar'].url
+            })
+        return data
 
     def get_image(self, obj):
         # 图片链接

@@ -155,7 +155,7 @@ class UserPagination(PageNumberPagination):
 class UserViewset(viewsets.ModelViewSet):
     """
     list:
-        获取全部用户, (按下载量,收藏量,关注量排序)
+        获取全部用户, (按下载量,收藏量,关注量排序,收藏量与下载量按照周、月、总排)
     create:
         注册用户
     retrieve:
@@ -187,6 +187,45 @@ class UserViewset(viewsets.ModelViewSet):
             })
         return data
 
+    def page_serializer(self, qs, page, request):
+        """
+        分页和序列化
+        """
+        sum_qs = qs.count()
+        if (page - 1) * 8 > sum_qs:
+            return Response([])
+        if page * 8 < sum_qs:
+            qs = qs[(page - 1) * 8:page * 8]
+            next_page = page + 1
+        else:
+            qs = qs[(page - 1) * 8:]
+            next_page = None
+
+        # 序列化
+        results = []
+        for q in qs:
+            user = User.objects.get(id=q['image__user'])
+            ship = Follow.objects.filter(fan_id=request.user.id, follow_id=user.id)
+            if ship.count():
+                if_follow = ship[0].id
+            else:
+                if_follow = False
+            results.append({
+                "id": user.id,
+                "fan_nums": user.fan_nums,
+                "username": user.username,
+                "if_cer": user.if_cer,
+                "if_sign": user.if_sign,
+                "if_follow": if_follow,
+                "images": self.get_image(user, request)
+            })
+
+        return Response({
+            "count": sum_qs,
+            "next": next_page,
+            "results": results
+        })
+
     def rank(self, kw, time, request):
         """周,月排行榜"""
         # 处理下载还是收藏
@@ -217,40 +256,7 @@ class UserViewset(viewsets.ModelViewSet):
         # 分页
         page = request.GET.get('page')
         page = 1 if not page else int(page)
-        sum_qs = qs.count()
-        if (page-1)*8 > sum_qs:
-            return Response([])
-        if page*8 < sum_qs:
-            qs = qs[(page-1)*8:page*8]
-            next_page = page+1
-        else:
-            qs = qs[(page-1)*8:]
-            next_page = None
-
-        # 序列化
-        results = []
-        for q in qs:
-            user = User.objects.get(id=q['image__user'])
-            ship = Follow.objects.filter(fan_id=request.user.id, follow_id=user.id)
-            if ship.count():
-                if_follow = ship[0].id
-            else:
-                if_follow = False
-            results.append({
-                "id": user.id,
-                "fan_nums": user.fan_nums,
-                "username": user.username,
-                "if_cer": user.if_cer,
-                "if_sign": user.if_sign,
-                "if_follow": if_follow,
-                "images": self.get_image(user, request)
-            })
-
-        return Response({
-            "count": sum_qs,
-            "next": next_page,
-            "results": results
-        })
+        return self.page_serializer(qs, page, request)
 
     def list(self, request, *args, **kwargs):
         kw = request.GET.get('ordering')

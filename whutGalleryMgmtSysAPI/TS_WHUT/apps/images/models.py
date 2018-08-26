@@ -98,21 +98,6 @@ class Groups(models.Model):
         return self.name
 
 
-# class SmallGroups(models.Model):
-#     # 图片小类
-#     name = models.CharField(verbose_name="小类名称", max_length=20)
-#     add_time = models.DateField(default=datetime.now, verbose_name="添加时间")
-#     group = models.ForeignKey(Groups, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="所属大类",
-#                               related_name="groups")
-#
-#     class Meta:
-#         verbose_name = "图片小类"
-#         verbose_name_plural = verbose_name
-#
-#     def __str__(self):
-#         return self.name
-
-
 class GroupImage(models.Model):
     # 小类与图片关联
     name = models.CharField(verbose_name="图片分类", max_length=20)
