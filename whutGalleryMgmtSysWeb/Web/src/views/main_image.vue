@@ -156,7 +156,7 @@
     }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
   #main-image{
     width: 111rem;
     margin: 3.75rem auto;
