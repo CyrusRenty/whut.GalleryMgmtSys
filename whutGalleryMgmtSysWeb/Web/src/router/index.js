@@ -62,26 +62,31 @@ const router=new Router({
             {
               path:'download',
               name:'person_download',
+              meta:'个人中心-图说理工',
               component:()=>import('@/views/person/main_content/download'),
             },
             {
               path:'folder_content',
               name:'folder_content',
+              meta:'个人中心-图说理工',
               component:()=>import('@/views/person/main_content/folder_content'),
             },
             {
               path:'collection',
               name:'person_collection',
+              meta:'个人中心-图说理工',
               component:()=>import('@/views/person/main_content/collection'),
             },
             {
              path: 'upload',
              name: 'person_upload',
+              meta:'个人中心-图说理工',
              component:()=> import('@/views/person/main_content/person_upload'),
               children: [
                 {
                   path: 'uploader',
                   name: 'uploader',
+                  meta:'上传',
                   component:()=> import('../components/uploader'),
                 }
               ]
@@ -98,6 +103,11 @@ const router=new Router({
           name:'zcsm',
           meta:'注册声明-图说理工',
           component:()=>import('../views/zcsm')
+        },
+        {
+          path:'search_result/:search_content',
+          name:'search_result',
+          component:()=>import('../views/search_result')
         }
       ]
     },
@@ -119,6 +129,10 @@ router.beforeEach((to,from,next)=>{
       store.dispatch('setImageInfo').then(()=>{
         document.title=store.state.imageGroup.imageInfo.name
       })
+    }
+    if(to.name==='search_result'){
+      store.commit('SET_SEARCH_CONTENT',to.params.search_content)
+      document.title=to.params.search_content
     }
   }
   if(!cookie.getCookie('token')){

@@ -51,8 +51,6 @@
       <img src="../../assets/noResult.png" class="no-result-img">
       <p class="no-result-word">没有找到符合条件的结果</p>
     </div>
-    <div class="no-more-hint no-result-word" v-if="!sw">正在加载...</div>
-    <div class="no-more-hint no-result-word" v-if="!this.$store.state.imageGroup.continue_getImage&&photos.length">没有更多了~</div>
   </div>
 </template>
 
@@ -92,11 +90,10 @@
         }
        },
       created(){
-        window.addEventListener('scroll', this.get);
-        this.$store.commit('SET_MAIN_SEARCH',true)
-        if(this.$store.state.imageGroup.status==='normal'&&!this.$store.state.imageGroup.image.length)
-        this.$store.dispatch('setImageGroupI').then(()=>{
-        })
+        // this.$store.commit('SET_MAIN_SEARCH',true)
+        // if(this.$store.state.imageGroup.status==='normal'&&!this.$store.state.imageGroup.image.length)
+        // this.$store.dispatch('setImageGroupI').then(()=>{
+        // })
       },
       mounted(){
       },
@@ -197,7 +194,7 @@
   .main-image{
     padding: 3rem 0;
     margin: 0 auto;
-    min-height: 500px;
+    height: 76.6rem;
   }
   .floatL{
     float: left;
@@ -210,6 +207,7 @@
     margin-left: 1.5rem;
     font-weight: bold;
   }
+
 
 /*
 person-card

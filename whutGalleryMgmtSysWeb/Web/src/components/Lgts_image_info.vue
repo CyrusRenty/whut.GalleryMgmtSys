@@ -63,7 +63,7 @@
 <script>
   import {setFollow, setUnFollow, setLike, setUnLike, download} from "../api/action";
   import image_comment from '../components/image_comment'
-  import tslg_head from '../components/body/Lgts_head'
+  import tslg_head from './body/tslg_header'
   import tslg_footer from '../components/body/tslg_footer'
   import {getInOtherUser} from "../utils/user";
   import cookie from "../utils/cookie";
