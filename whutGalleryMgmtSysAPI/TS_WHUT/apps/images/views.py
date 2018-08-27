@@ -130,31 +130,33 @@ class GroupsViewset(mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.G
         return ImageSerializer
 
 
-def filter_cate(cates):
+def filter_cate(cates, images):
     """根据分类筛选图片,例如url末尾是?cates=人物,生活,菁菁校园
     :param cates: cates
+    :param images: queryset
     :return: queryset
     """
     cates = cates.split(',')
-    queryset = ImageModel.objects.filter(groupimage__name=cates[0])
+    queryset = images.filter(groupimage__name=cates[0])
     if not queryset.count():
         groups = Groups.objects.filter(name=cates[0])
         if groups.count():
             groups = Groups.objects.filter(parent=groups[0])
-            queryset = ImageModel.objects.filter(groupimage__group__in=groups)
+            queryset = images.filter(groupimage__group__in=groups)
 
     if len(cates) > 1:
         for cate in cates[1:]:
-            start_nums = queryset.count()
-            queryset = queryset.filter(groupimage__name=cate)
-            end_nums = queryset.count()
+            queryseted = queryset.filter(groupimage__name=cate)
+            nums = queryseted.count()
 
             # 如果是第一层类别
-            if start_nums == end_nums:
+            if nums == 0:
                 groups = Groups.objects.filter(name=cate)
                 if groups.count():
                     groups = Groups.objects.filter(parent=groups[0])
                     queryset = queryset.filter(groupimage__group__in=groups)
+            else:
+                queryset = queryseted
 
     return queryset
 
@@ -242,19 +244,28 @@ class ImageViewset(mixins.ListModelMixin,
         }
 
     def list(self, request, *args, **kwargs):
+        # 检索
+        queryset = None
+        search = request.GET.get('search')
+        if search:
+            queryset = ImageModel.objects.filter(save_hot_word(search)).filter(if_active=True)
+
         # 筛选分类
         cates = request.GET.get('cates')
         if cates:
-            queryset = self.filter_queryset(filter_cate(cates))
+            if queryset:
+                queryset = self.filter_queryset(filter_cate(cates, queryset))
+            else:
+                queryset = self.filter_queryset(filter_cate(cates, ImageModel.objects.all()))
+        elif queryset:
+            queryset = self.filter_queryset(queryset)
         else:
             queryset = self.filter_queryset(self.get_queryset())
 
-        # 检索
-        search = request.GET.get('search')
-        if queryset.count() and search:
-            queryset = queryset.filter(save_hot_word(search))
-
-        page = self.paginate_queryset(queryset[::-1])
+        if queryset.count():
+            page = self.paginate_queryset(queryset[::-1])
+        else:
+            page = self.paginate_queryset(queryset)
 
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
