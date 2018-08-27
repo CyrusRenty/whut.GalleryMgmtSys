@@ -63,6 +63,9 @@ export default {
   input[type="number"] {
     -moz-appearance: textfield;
   }
+  input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px white inset;
+  }
   img{
     cursor: pointer;
   }

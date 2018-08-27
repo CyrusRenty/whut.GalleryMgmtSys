@@ -1,12 +1,12 @@
 <template>
-    <div id="main-image">
-      <div v-for="(item,index) in nav_items" class="main-item-box">
+    <div id="main-image" v-if="nav_items.length">
+      <div v-for="(item,index) in nav_items" class="main-item-box" >
         <div class="title-wrap">
-           <a>{{nav_items[index].first.name}}</a><a v-for="item_title in nav_items[index].second">{{item_title.name}}</a>
+           <a>{{item.name}}</a><a v-for="item_title in item.kids">{{item_title.name}}</a>
           <a class="more">更多</a>
         </div>
-        <div class="image-wrap clear">
-          <div v-for="(item_image,image_index) in nav_items[index].image" class="image-box">
+        <div class="main-image clear" >
+          <div v-for="(item_image,image_index) in item.image" class="image-box image-item" >
             <div class="image-content" :style="{'background-image':`url(${item_image.image})`}">
               <div class="image-up" @click="showImageInfo(item_image.id)">
                 <div class="btn-warp clear">
@@ -19,13 +19,38 @@
                     <span class="btn-span">{{item_image.like_nums}}</span>
                   </div>
                 </div>
-                <a class="download-warp"  :href="item_image.image.split('.400x300')[0]" @click.stop="setDownload(item_image.id)" :download="item_image.name" title="点击下载">
+                <a  class="download-warp"  :href="item_image.image.split('.400x300')[0]" @click.stop="setDownload(item_image.id)" :download="item_image.name" title="点击下载">
                   <img  class="download-img" src="../assets/download.svg">
                   <span class="download-span">下载</span>
                 </a>
               </div>
             </div>
-            <div class="image-name">{{item_image.name}}</div>
+            <div class="photo-info">
+              <div class="works">
+                <div class="works-name">{{item_image.name}}</div>
+                <div class="works-type">{{item_image.cates}}</div>
+              </div>
+              <div class="author">
+                <i class="user-image" :style="{'background-image':`url(${item_image.user.image})`}" @click="getInOtherUser(item_image.user.id)" @mouseenter="showPersonCard(index*10+image_index)" @mouseleave="showPersonCard" :title="'进入'+item_image.user.username+'的主页'"></i>
+                <div class="author-name">{{item_image.user.username}}</div>
+                <div  @click="setFollow(item_image)"><div class="unFollow follow" v-if="!item_image.if_follow" title="关注">+关注</div><div class="followed follow" v-if="item_image.if_follow" title="取消关注">已关注</div></div>
+              </div>
+            </div>
+            <div class="author-detail" v-if="show_person_card===index*10+image_index">
+              <div class="author-big-pic" :style="{'background-image':`url(${item_image.user.image})`}">
+              </div>
+              <span class="person-card-name">{{item_image.user.username}}</span>
+              <div class="products-and-fans">
+                <div class="nums-info author-products">
+                  <span class="nums-info-title">作品</span>
+                  <span class="author-nums">{{item_image.user.upload_nums}}</span>
+                </div>
+                <div class="nums-info author-fans">
+                  <span class="nums-info-title">粉丝</span>
+                  <span class="author-nums">{{item_image.user.fan_nums}}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -33,41 +58,36 @@
 </template>
 
 <script>
+  import {setTitle} from "../utils/user";
+  import {setFollow, setLike, setUnFollow, setUnLike} from "../api/action";
+  import {getInOtherUser, setDownload, setImageInfo} from "../utils/user";
   import {getTitle, getTypeImage} from "../api/get";
-    import {setLike, setUnLike} from "../api/action";
-    import {setDownload, setImageInfo} from "../utils/user";
   //https://i.pinimg.com/564x/89/f5/6f/89f56ff9fb2d02c2e3673d1513d93ad1.jpg
     export default {
         name: "main_image",
       data(){
           return {
-            nav_items:[
-
-            ],
+            //nav_items:[],
+            image_items:[],
             like:require('../assets/image_like.png'),
             unlike:require('../assets/image_unlike.png'),
             collect:require('../assets/image_collect.png'),
             unCollect:require('../assets/image_unCollect.png'),
+            show_person_card:-1
           }
       },
+      computed:{
+          nav_items(){
+            return this.$store.state.imageGroup.title
+          },
+      },
+      created(){
+         setTitle()
+      },
       mounted(){
-         this.get()
+          console.log(this.nav_items)
       },
       methods:{
-        get(){
-            getTitle().then((res)=>{
-              for(let i=0;i<res.data.length;i++){
-                let a={first:{},second:[],image:[]}
-                a.first={name:res.data[i].name,id:res.data[i].id}
-                a.second=res.data[i].kids
-                getTypeImage(`group/${i+1}/?page=1&num=4`).then((res)=>{
-                  a.image=res.data.results
-                })
-                this.nav_items.push(a)
-              }
-              //console.log(this.nav_items)
-            })
-          },
         setLike(id,index,image_index){
           let item=this.nav_items[index].image[image_index]
           let data=new FormData();
@@ -100,12 +120,43 @@
         },
         showImageInfo(id){
           setImageInfo(id)
-        }
+        },
+        showPersonCard(index){
+          this.show_person_card=index
+        },
+        setFollow(item){
+          let data=new FormData();
+          data.append('follow',item.user.id)
+          data.append('fan',this.$store.state.user.userInfo.id)
+          if(!item.if_follow){
+            setFollow(data).then((res)=>{
+               this.actionFollow(item.user.id,res.data.id)
+            })
+          }else{
+            setUnFollow(item.if_follow).then(()=>{
+               this.actionFollow(item.user.id,false)
+            })
+          }
+        },
+        actionFollow(id1,id2){
+          let length=this.nav_items.length
+          for(let i=0;i<length;i++){
+            let length=this.nav_items[i].image.length
+            let image=this.nav_items[i].image
+            for(let j=0;j<length;j++){
+              if(image[j].user.id===id1)
+                image[j].if_follow=id2
+            }
+          }
+        },
+        getInOtherUser(id){
+          getInOtherUser(id)
+        },
       }
     }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
   #main-image{
     width: 111rem;
     margin: 3.75rem auto;
@@ -152,15 +203,16 @@
     margin-left: .3rem;
   }
   .image-box{
+    background: #fff;
+    width:24.75rem;
     height: 32.32rem;
-    width: 24.75rem;
     float: left ;
     margin: 0 1.5rem;
     box-shadow:0 0 4px #9B9B9B ;
   }
   .image-content{
     width: 100%;
-    height: 28.75rem;
+    height: 18.54rem;
     background: no-repeat center;
     background-size: cover;
     position: relative;
@@ -221,10 +273,13 @@
     border-radius: 3rem;
     position: absolute;
     z-index: 1;
-    bottom: 3rem;
-     right: 6.75rem;
-    line-height:3rem ;
-    cursor: pointer;
+    bottom:0;
+     right:0;
+     left: 0;
+     top: 0;
+     margin: auto;
+     line-height:3rem ;
+     cursor: pointer;
      display: flex;
      justify-content: center;
      align-items: center;
@@ -236,5 +291,79 @@
    .download-span{
      font-size: 0.875rem;
      font-weight: 600;
+     font-family: 'HiraginoSansGB';
   }
+  .user-image,.author-big-pic{
+    background: no-repeat center;
+    -webkit-background-size: cover;
+    background-size: cover;
+  }
+
+
+  /*
+person-card
+ */
+  .author-detail{
+    position: absolute;
+    top:0;
+    width: 100%;
+    height: 27.25rem;
+    background: white;
+    box-shadow:0.125rem 0.125rem 0.875rem #D6D6D6;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    line-height: 3rem;
+    z-index: 2;
+    font-size: 1.25rem;
+    font-weight: bold;
+  }
+
+  .author-detail:before{
+    content: "";
+    display: block;
+    position: absolute;
+    border: 0.75rem solid transparent;
+    border-top-color: white;
+    left: 2.2rem;
+    bottom: -1.5rem;
+  }
+
+  .author-big-pic{
+    display: inline-block;
+    width: 10rem;
+    height: 10rem;
+    border-radius: 10rem;
+  }
+
+  .person-card-name{
+    font-size: 1.5rem;
+  }
+
+  .products-and-fans{
+    display: flex;
+  }
+
+  .nums-info{
+    display: flex;
+    flex-direction: column;
+    line-height: 2rem;
+    padding: 0 3rem 0;
+    margin-top: 2rem;
+  }
+
+  .author-products{
+    border-right: 0.125rem solid #cecece;
+  }
+
+  .nums-info-title{
+    color: #9b9b9b;
+  }
+
+  .author-nums{
+    font-weight: bold;
+  }
+
 </style>

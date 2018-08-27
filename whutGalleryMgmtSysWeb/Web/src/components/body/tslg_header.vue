@@ -99,7 +99,7 @@
 
   .tslg-header{
     display: flex;
-    height:5rem;
+    height:4rem;
     width: 100%;
     background-color: #F7FAFB;
     box-sizing: border-box;
@@ -141,8 +141,8 @@
     cursor: pointer;
   }
   .person-img{
-    width: 3rem;
-    height: 3rem;
+    width: 2.5rem;
+    height: 2.5rem;
     -webkit-border-radius: 50%;
     -moz-border-radius: 50%;
     border-radius: 50%;
@@ -159,7 +159,7 @@
     background: white;
     position: absolute;
     right: 2rem;
-    top:5rem;
+    top:4rem;
     z-index: 2;
     padding: 0 1.1875rem;
   }

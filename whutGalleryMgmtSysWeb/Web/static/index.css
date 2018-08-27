@@ -194,6 +194,7 @@ follow bottom
   font-weight: 600;
   line-height: 2rem;
   cursor: pointer;
+  text-align: center;
 }
 .unFollow{
   background: #9ad3e2;
@@ -297,7 +298,7 @@ image-card
   color:#9AD3E2;
 }
 .image-item .download-warp{
-  width: 9rem;
+  width: 11.25rem;
   height: 3rem;
   background: #fff;
   border-radius: 3rem;
@@ -310,11 +311,13 @@ image-card
   margin: auto;
   line-height:3rem ;
   cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .image-item .download-img{
   width: 1.6rem;
-  float: left;
-  margin: 0.6rem 0 0 2.5rem;
+
 }
 .image-item .download-span{
   float: left;

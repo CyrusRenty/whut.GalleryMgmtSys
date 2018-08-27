@@ -17,10 +17,16 @@ const imageGroup={
     comment_list:[],//mock.comment,
     comment_next_page:'',
     no_result:false,
+    search_content:'',
+    search_count:0,
+    title:[],
+    image_main:'',
+    next_cates:''
   },
   mutations:{
     SET_IMAGEGROUPI:(state,data)=>{
-      state.image.push(...data)
+      state.image=data.results
+      state.search_count=data.count
     },
     SET_IMAGEGROUP:(state)=>{
       state.image=[]
@@ -61,11 +67,20 @@ const imageGroup={
     SET_COMMENT_NEXT_PAGE:(state,data)=>{
       state.comment_next_page=data
     },
-    SET_SEARCH_CONTEXT:(state,data)=>{
-      state.search_context=data
+    SET_SEARCH_CONTENT:(state,data)=>{
+      state.search_content=data
     },
     SET_NO_RESULT:(state,data)=>{
       state.no_result=data
+    },
+    SET_TITLE:(state,data)=>{
+      state.title=data
+    },
+    SET_IMAGE_MAIN:(state,data)=>{
+      state.image_main=data
+    },
+    SET_NEXT_CATES:(state,data)=>{
+      state.next_cates=data
     }
   },
   actions:{
@@ -79,7 +94,7 @@ const imageGroup={
              else{
                commit('SET_NEXT_SEARCH',res.data.next.split("111.231.230.54/")[1]);
              }
-             commit('SET_IMAGEGROUPI',res.data.results);
+             commit('SET_IMAGEGROUPI',res.data);
              resolve()
            }else reject()
         }).catch(error=>{
@@ -138,6 +153,17 @@ const imageGroup={
             res.data.size=size
             commit('SET_IMAGE_USER_INFO',res.data.user)
             commit('SET_IMAGE_INFO',res.data)
+            resolve()
+          }else reject()
+        })
+      })
+    },
+    setCates({commit,state}){
+      return new Promise((resolve,reject)=>{
+        getOrderImage(state.next_cates).then((res)=>{
+          if(res.data){
+
+            commit('SET_IMAGEGROUPI',res.data)
             resolve()
           }else reject()
         })

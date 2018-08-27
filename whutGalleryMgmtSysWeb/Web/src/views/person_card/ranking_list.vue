@@ -34,7 +34,7 @@
 </template>
 
 <script>
-  import Lgts_head from '../../components/body/Lgts_head'
+  import Lgts_head from '../../components/body/tslg_header'
   import tslg_footer from '../../components/body/tslg_footer'
   import {setFollow,setUnFollow} from "../../api/action";
   import {getInOtherUser} from "../../utils/user";

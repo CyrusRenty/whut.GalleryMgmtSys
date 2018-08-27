@@ -15,7 +15,7 @@
 </template>
 
 <script>
-  import Lgts_head from '../../components/body/Lgts_head'
+  import Lgts_head from '../../components/body/tslg_header'
   import top_image from './top_image'
   import sign_nav from './sign/sign-nav'
   import sign from'./sign/sign'

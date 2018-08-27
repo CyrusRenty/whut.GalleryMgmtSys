@@ -1,6 +1,7 @@
 import {setLike,setUnLike,download} from "../api/action";
 import store from '../store'
 import router from '../router'
+import {getTypeImage,getTitle} from "../api/get";
 const user= {
   setLike(id, index) {
     let data = new FormData();
@@ -59,4 +60,18 @@ export function goLogin() {
 export function goRegister() {
   store.commit('SET_DO_LOGIN',false)
   router.push({name:'login'})
+}
+export function setTitle() {
+  var array=[]
+  getTitle().then((res)=>{
+    array=res.data
+    for(let i=0;i<res.data.length;i++){
+      array[i].image=[]
+      getTypeImage(`group/${i+1}/?page=1&num=4`).then((res)=>{
+        array[i].image=res.data.results
+      })
+    }
+    store.commit('SET_TITLE',array)
+  })
+  return array
 }

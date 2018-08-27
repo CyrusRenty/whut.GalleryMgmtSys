@@ -1,6 +1,6 @@
 import axios from '../utils/axios'
 
-let api=''
+let api='/api'
 export function login(data) {
   return axios.post(`${api}/login/`, data)
 }

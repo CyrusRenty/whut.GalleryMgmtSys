@@ -111,9 +111,11 @@
                     this.$refs.checkbox[i].disabled=false
                   }
                 }
+                console.log(this.array_cate)
             },
             async submit() {
               this.cates=this.array_cate.join(" ")
+              console.log(this.cates)
               if (this.files.length === 0) {
                   this.hint_image='请选择图片'
                   return
