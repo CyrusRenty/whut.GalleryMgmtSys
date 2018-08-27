@@ -105,5 +105,11 @@ class Org(models.Model):
         verbose_name = "组织认证"
         verbose_name_plural = verbose_name
 
+    def url(self):
+        from django.utils.safestring import mark_safe
+        return mark_safe("<a href='/org_image/" + str(self.user.id) + "/'>跳转</>")
+
+    url.short_description = "审查链接"
+
     def __str__(self):
         return self.name

@@ -13,10 +13,10 @@ from rest_framework.authtoken import views
 from rest_framework_jwt.views import obtain_jwt_token
 from rest_framework.routers import DefaultRouter
 
-from images.views import ImageViewset, BannerViewset, CommentViewset, SearchWordViewset, SmallGroupsViewset, GroupsViewset
+from images.views import ImageViewset, BannerViewset, CommentViewset, SearchWordViewset, GroupsViewset
 from users.views import FolderViewset, UserViewset, HasUser, OrgViewset
 from operations.views import (LikeViewset, DownloadViewset, FollowViewset, ActiveUserView, ResetPwdView,
-                              CollectViewset, FollowUserViewset, FanUserViewset, ForgetView, UserImageView,
+                              CollectViewset, FollowUserViewset, FanUserViewset, ForgetView, UserImageView, OrgImage,
                               ChangePasswordView, CommentLikeViewset, ApplicationViewset, CheckView, ReportViewset)
 
 router = DefaultRouter()
@@ -26,10 +26,8 @@ router.register('images', ImageViewset, base_name="images")
 router.register('banners', BannerViewset, base_name="banners")
 # 搜索词API
 router.register('search', SearchWordViewset, base_name="search")
-# 小类别API
-router.register('group', SmallGroupsViewset, base_name="group")
-# 大类别API
-router.register('big_group', GroupsViewset, base_name="big_group")
+# 图片类别API
+router.register('group', GroupsViewset, base_name="big_group")
 # 评论API
 router.register('comment', CommentViewset, base_name="comment")
 # 收藏夹API
@@ -81,6 +79,8 @@ urlpatterns = [
     path('new_pwd/', ChangePasswordView.as_view(), name="new_pwd"),
     # 审查图片
     path('user_image/<int:user_id>/', UserImageView.as_view(), name="user_image"),
+    # 认证界面
+    path('org_image/<int:user_id>/', OrgImage.as_view(), name="org_image"),
     # 提交审核信息
     path('check/', CheckView.as_view(), name="check"),
     # 主页url

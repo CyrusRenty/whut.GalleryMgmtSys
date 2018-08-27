@@ -2,6 +2,7 @@ from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from datetime import datetime
 from .models import LikeShip, DownloadShip, Follow, UserFolderImage, CommentLike, Application, Report
+from users.models import Org
 
 
 @receiver(post_save, sender=Report)
@@ -18,6 +19,22 @@ def create_report(sender, instance=None, created=False, **kwargs):
     elif instance.status == '2':
         comment = instance.comment
         comment.delete()
+
+
+@receiver(post_save, sender=Org)
+def change_if_cer(sender, instance=None, created=False, **kwargs):
+    """
+    当签约动作完成
+    """
+    if instance.status == '2':
+        # 用户状态改成已签约, 结束等待
+        user = instance.user
+        user.if_cer = True
+        user.save()
+    else:
+        user = instance.user
+        user.if_cer = False
+        user.save()
 
 
 @receiver(post_save, sender=Application)

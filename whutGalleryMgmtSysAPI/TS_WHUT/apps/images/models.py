@@ -30,50 +30,68 @@ class BannerModel(models.Model):
 
 class ImageModel(models.Model):
     # 图片
+    ACTIEVE_TYPE = (
+        (1, "已通过"),
+        (2, "等待审核"),
+        (3, "未通过"),
+    )
+
     image = ThumbnailerImageField(upload_to="images/%Y/%m", storage=ImageStorage(), blank=True,
                                   verbose_name="图片", max_length=100)
     add_time = models.DateField(default=datetime.now, verbose_name="添加时间")
-    if_active = models.BooleanField(default=False, verbose_name="是否通过审核")
+    if_active = models.IntegerField(choices=ACTIEVE_TYPE, default=2, verbose_name="处理情况")
     desc = models.CharField(max_length=200, verbose_name="描述", null=True, blank=True)
     user = models.ForeignKey(User, models.SET_NULL, null=True, verbose_name="上传人")
     pattern = models.CharField(max_length=10, verbose_name="格式", default="jpeg")
     like_nums = models.IntegerField(default=0, verbose_name="点赞数")
-    cates = models.CharField(max_length=200, verbose_name="种类字符串", default="")
+    cates = models.CharField(max_length=200, verbose_name="层级划分", default="")
     collection_nums = models.IntegerField(default=0, verbose_name="收藏数")
     download_nums = models.IntegerField(default=0, verbose_name="下载量")
-    name = models.CharField(max_length=20, verbose_name="名字", default="")
+    name = models.CharField(max_length=20, verbose_name="图片名", default="")
+
+    def url(self):
+        from django.utils.safestring import mark_safe
+        html = "<a href='/admin/users/userprofile/" + str(self.user.id) + "/update/'>" + self.user.username + "</>"
+        if self.user.if_sign:
+            html += "<i> 已签约</i>"
+        if self.user.if_cer:
+            html += "<i> 已认证</i>"
+        return mark_safe(html)
+
+    url.short_description = "上传者"
+
+    def i_desc(self):
+        if len(self.desc) > 5:
+            return self.desc[:5] + '...'
+        return self.desc
+
+    i_desc.short_description = "图片描述"
 
     class Meta:
         verbose_name = "图片"
         verbose_name_plural = verbose_name
 
     def __str__(self):
-        return self.name
+        return str(self.id)
 
 
 class Groups(models.Model):
     # 图片大类
-    name = models.CharField(verbose_name="大类名称", max_length=20)
+    CATEGORY_TYPE = (
+        (0, "三级类目"),
+        (1, "二级类目"),
+        (2, "一级类目"),
+    )
+
+    name = models.CharField(verbose_name="类别名称", max_length=20)
     add_time = models.DateField(default=datetime.now, verbose_name="添加时间")
+    level = models.IntegerField(choices=CATEGORY_TYPE, default=1, verbose_name="层级")
+    parent = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="所属类目",
+                               related_name="kids")
     if_show = models.BooleanField(default=False, verbose_name="是否展示")
 
     class Meta:
-        verbose_name = "图片大类"
-        verbose_name_plural = verbose_name
-
-    def __str__(self):
-        return self.name
-
-
-class SmallGroups(models.Model):
-    # 图片小类
-    name = models.CharField(verbose_name="小类名称", max_length=20)
-    add_time = models.DateField(default=datetime.now, verbose_name="添加时间")
-    group = models.ForeignKey(Groups, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="所属大类",
-                              related_name="groups")
-
-    class Meta:
-        verbose_name = "图片小类"
+        verbose_name = "图片类别"
         verbose_name_plural = verbose_name
 
     def __str__(self):
@@ -85,11 +103,11 @@ class GroupImage(models.Model):
     name = models.CharField(verbose_name="图片分类", max_length=20)
     add_time = models.DateField(default=datetime.now, verbose_name="添加时间")
     image = models.ForeignKey(ImageModel, models.CASCADE, verbose_name="图片")
-    group = models.ForeignKey(SmallGroups, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="类别",
+    group = models.ForeignKey(Groups, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="类别",
                               related_name="images")
 
     class Meta:
-        verbose_name = "图片种类"
+        verbose_name = "图片类别添加"
         verbose_name_plural = verbose_name
 
     def __str__(self):

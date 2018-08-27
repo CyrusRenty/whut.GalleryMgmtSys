@@ -1,7 +1,7 @@
 import xadmin
 from xadmin.layout import Main, Fieldset, Side
 
-from .models import BannerModel, ImageModel, Comment, SmallGroups, Groups, SearchWord
+from .models import BannerModel, ImageModel, Comment, Groups, SearchWord, GroupImage
 
 
 class SearchWordAdmin(object):
@@ -11,10 +11,16 @@ class SearchWordAdmin(object):
     model_icon = 'fa fa-file-word-o'
 
 
+class GroupImageAdmin(object):
+    list_display = ('group', 'image', 'add_time')
+    list_filter = ('group',)
+    model_icon = 'fa fa-object-group'
+
+
 class GroupsAdmin(object):
-    list_display = ('name', 'add_time', 'if_show')
+    list_display = ('name', 'add_time', 'if_show', 'level', 'parent')
     search_fields = ('name',)
-    list_filter = ('name', 'add_time', 'if_show')
+    list_filter = ('name', 'add_time', 'if_show', 'level')
     model_icon = 'fa fa-object-group'
     form_layout = (
         Main(
@@ -29,13 +35,6 @@ class GroupsAdmin(object):
                      ),
         )
     )
-
-
-class SmallGroupsAdmin(object):
-    list_display = ('name', 'add_time', 'group')
-    search_fields = ('name',)
-    list_filter = ('name', 'add_time')
-    model_icon = 'fa fa-object-group'
 
 
 class BannerModelAdmin(object):
@@ -60,7 +59,7 @@ class BannerModelAdmin(object):
 
 
 class ImageModelAdmin(object):
-    list_display = ('name', 'user', 'if_active', 'desc', 'pattern', 'cates', 'add_time')
+    list_display = ('name', 'url', 'if_active', 'cates', 'pattern', 'i_desc', 'add_time')
     search_fields = ('name', 'desc', 'pattern')
     list_filter = ('user', 'name', 'if_active', 'desc', 'pattern', 'cates', 'add_time')
     readonly_fields = ('user', 'add_time')
@@ -84,7 +83,7 @@ class ImageModelAdmin(object):
 
     def get_readonly_fields(self):
         if self.user.is_superuser:
-            self.readonly_fields = []
+            self.readonly_fields = ['user']
         return self.readonly_fields
 
 
@@ -102,8 +101,7 @@ class CommentAdmin(object):
 
 xadmin.site.register(BannerModel, BannerModelAdmin)
 xadmin.site.register(ImageModel, ImageModelAdmin)
-# xadmin.site.register(GroupImage, GroupImageAdmin)
 xadmin.site.register(Comment, CommentAdmin)
-xadmin.site.register(SmallGroups, SmallGroupsAdmin)
 xadmin.site.register(Groups, GroupsAdmin)
 xadmin.site.register(SearchWord, SearchWordAdmin)
+xadmin.site.register(GroupImage, GroupImageAdmin)

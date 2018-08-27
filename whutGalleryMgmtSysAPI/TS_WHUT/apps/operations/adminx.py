@@ -52,7 +52,7 @@ class CommentLikeAdmin(object):
 
 
 class UserFolderImageAdmin(object):
-    list_display = ('folder', 'user', 'image', 'add_time')
+    list_display = ('folder', 'user', 'image_url', 'add_time')
     list_filter = ('folder', 'user', 'image', 'add_time')
     readonly_fields = ('folder', 'user', 'image', 'add_time')
     model_icon = 'fa fa-gratipay'

@@ -63,6 +63,11 @@ class UserFolderImage(models.Model):
         verbose_name = "收藏图片"
         verbose_name_plural = verbose_name
 
+    def image_url(self):
+        return self.image.name + ': ' + self.image.user.username
+
+    image_url.short_description = "图片"
+
 
 class Application(models.Model):
     # 申请签约

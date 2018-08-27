@@ -11,7 +11,9 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.response import Response
 from django.http import HttpResponse
+from django.db.models import Count
 import json
+import datetime
 from django.contrib.auth.hashers import make_password
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
@@ -19,6 +21,8 @@ from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from .serializer import (FolderCreateSerializer, FolderListSerializer, FolderOneSerializer, FolderUpdateSerializer,
                          UserListSerializer, UserCreateSerializer, UserUpdateSerializer, OrgSerializer, OrgOneSerializer)
 from .models import Folder, UserMessage, Org
+from images.models import ImageModel
+from operations.models import DownloadShip, UserFolderImage, Follow
 from my_utils.send_email import send_register_email
 from .filters import UsersFilter
 
@@ -151,7 +155,7 @@ class UserPagination(PageNumberPagination):
 class UserViewset(viewsets.ModelViewSet):
     """
     list:
-        获取全部用户, (按下载量,收藏量,关注量排序)
+        获取全部用户, (按下载量,收藏量,关注量排序,收藏量与下载量按照周、月、总排)
     create:
         注册用户
     retrieve:
@@ -169,6 +173,107 @@ class UserViewset(viewsets.ModelViewSet):
     ordering_fields = ('fan_nums', 'download_nums', 'collection_nums')
     authentication_classes = (JSONWebTokenAuthentication, authentication.SessionAuthentication)
 
+    def get_image(self, user, request):
+        """获取用户三张图片"""
+        data = []
+        i = 0
+        for image in ImageModel.objects.filter(user=user, if_active=1)[::-1]:
+            i += 1
+            if i > 3:
+                return data
+            data.append({
+                "url": image.image['avatar'].url,
+                "id": image.id,
+            })
+        return data
+
+    def page_serializer(self, qs, page, request):
+        """
+        分页和序列化
+        """
+        sum_qs = qs.count()
+        if (page - 1) * 8 > sum_qs:
+            return Response([])
+        if page * 8 < sum_qs:
+            qs = qs[(page - 1) * 8:page * 8]
+            next_page = page + 1
+        else:
+            qs = qs[(page - 1) * 8:]
+            next_page = None
+
+        # 序列化
+        results = []
+        for q in qs:
+            user = User.objects.get(id=q['image__user'])
+            ship = Follow.objects.filter(fan_id=request.user.id, follow_id=user.id)
+            if ship.count():
+                if_follow = ship[0].id
+            else:
+                if_follow = False
+            results.append({
+                "id": user.id,
+                "fan_nums": user.fan_nums,
+                "username": user.username,
+                "if_cer": user.if_cer,
+                "if_sign": user.if_sign,
+                "if_follow": if_follow,
+                "images": self.get_image(user, request)
+            })
+
+        return Response({
+            "count": sum_qs,
+            "next": next_page,
+            "results": results
+        })
+
+    def rank(self, kw, time, request):
+        """周,月排行榜"""
+        # 处理下载还是收藏
+        Klass = UserFolderImage
+        if kw == '-download_nums':
+            Klass = DownloadShip
+
+        # 处理周或者月
+        now_time = datetime.datetime.now()
+        if time == 'week':
+            day_num = now_time.isoweekday()
+            monday = (now_time - datetime.timedelta(days=day_num))
+            time_range = (monday, now_time)
+        elif time == 'month':
+            month = now_time.month
+            if month == 12:
+                month = 0
+            last_day = datetime.datetime(now_time.year, month + 1, 1, 0, 0, 0)
+            first_day = datetime.datetime(now_time.year, now_time.month, 1, 0, 0, 0)
+            time_range = (first_day, last_day)
+        else:
+            return Response({"time": "参数错误"}, status=400)
+
+        # 查询排行情况
+        qs = Klass.objects.filter(add_time__range=time_range).values('image__user').annotate(
+            total_user=Count("image__user")).order_by("-total_user")
+
+        # 分页
+        page = request.GET.get('page')
+        page = 1 if not page else int(page)
+        return self.page_serializer(qs, page, request)
+
+    def list(self, request, *args, **kwargs):
+        kw = request.GET.get('ordering')
+        time = request.GET.get('time')
+        if kw in ('-download_nums', '-collection_nums') and time:
+            return self.rank(kw, time, request)
+
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     def get_queryset(self):
         if self.action == 'destroy':
             return User.objects.filter(id=self.request.user.id)
@@ -182,7 +287,7 @@ class UserViewset(viewsets.ModelViewSet):
         return [permissions.IsAuthenticated()]
 
     def get_serializer_class(self):
-        if self.action == 'list':
+        if self.action == 'retrieve':
             return UserListSerializer
         elif self.action == 'create':
             return UserCreateSerializer
