@@ -54,6 +54,12 @@ def recommend_image(desc):
     return ImageModel.objects.filter(q)
 
 
+class ImageUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ImageModel
+        fields = ('desc', 'cates', 'name', 'image')
+
+
 class ImageSerializer(serializers.ModelSerializer):
     user = UserBrifSerializer()
     image = serializers.SerializerMethodField()
@@ -86,7 +92,7 @@ class ImageSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         # 图片链接
         if self.context.get('water_image'):
-            return '/media/images/main/' + obj.image.url.rsplit('/', 1)[1]
+            return '/media/main/' + obj.image.url.rsplit('/', 1)[1]
         return obj.image['avatar'].url
 
     def get_if_like(self, obj):
@@ -126,7 +132,7 @@ class ImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ImageModel
-        fields = '__all__'
+        exclude = ('ori_img', 'file', 'if_active')
 
 
 class ImageCreateSerializer(serializers.ModelSerializer):
@@ -136,13 +142,13 @@ class ImageCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if attrs['image'].size > 10485760:
-            raise serializers.ValidationError("图片过大")
+            raise serializers.ValidationError("预览图过大")
         attrs['user'] = self.context['request'].user
         return attrs
 
     class Meta:
         model = ImageModel
-        fields = ('desc', 'cates', 'name', 'image')
+        fields = ('desc', 'cates', 'name', 'image', 'file', 'ori_img')
 
 
 class CommentListSerializer(serializers.ModelSerializer):
@@ -180,12 +186,20 @@ class GroupListSerializer(serializers.ModelSerializer):
     kids = serializers.SerializerMethodField()
 
     def get_kids(self, obj):
+        show = self.context['request'].query_params.get('show')
         data = []
-        kids = Groups.objects.filter(parent=obj, if_show=True)
+        if show == 'true':
+            kids = Groups.objects.filter(parent=obj)
+        else:
+            kids = Groups.objects.filter(parent=obj, if_show=True)
+
         for kid in kids:
             kid_data = []
 
-            kid_kids = Groups.objects.filter(parent=kid, if_show=True)
+            if show == 'true':
+                kid_kids = Groups.objects.filter(parent=kid)
+            else:
+                kid_kids = Groups.objects.filter(parent=kid, if_show=True)
             if kid_kids.count():
                 for kid_kid in kid_kids:
                     kid_data.append({
