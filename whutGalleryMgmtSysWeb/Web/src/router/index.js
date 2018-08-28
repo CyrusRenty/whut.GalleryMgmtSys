@@ -17,12 +17,13 @@ const router=new Router({
         {
           path:'login',
           name: 'login',
-          meta:'登录-图说理工',
+          meta:{title:'登录-图说理工'},
           component: ()=>import('../views/lgts_login')
         },
         {
           path:'main',
           name:'main',
+          meta:{search:true},
           component:()=>import('../views/Lgts_main'),
           children:[
 
@@ -41,12 +42,12 @@ const router=new Router({
         {
           path:'ranking_list',
           name:'ranking_list',
-          component:()=>import('../views/person_card/ranking_list')
+          component:()=>import('../views/rank/index')
         },
         {
           path:'signed_list',
           name:'signed_list',
-          component:()=>import('../views/person_card/signed_list')
+          component:()=>import('../views/rank/signed_list')
         },
         {
           path:'person',
@@ -62,31 +63,31 @@ const router=new Router({
             {
               path:'download',
               name:'person_download',
-              meta:'个人中心-图说理工',
+              meta:{title:'个人中心-图说理工'},
               component:()=>import('@/views/person/main_content/download'),
             },
             {
               path:'folder_content',
               name:'folder_content',
-              meta:'个人中心-图说理工',
+              meta:{title:'个人中心-图说理工'},
               component:()=>import('@/views/person/main_content/folder_content'),
             },
             {
               path:'collection',
               name:'person_collection',
-              meta:'个人中心-图说理工',
+              meta:{title:'个人中心-图说理工'},
               component:()=>import('@/views/person/main_content/collection'),
             },
             {
              path: 'upload',
              name: 'person_upload',
-              meta:'个人中心-图说理工',
+              meta:{title:'个人中心-图说理工'},
              component:()=> import('@/views/person/main_content/person_upload'),
               children: [
                 {
                   path: 'uploader',
                   name: 'uploader',
-                  meta:'上传',
+                  meta:{title:'上传'},
                   component:()=> import('../components/uploader'),
                 }
               ]
@@ -101,14 +102,22 @@ const router=new Router({
         {
           path:'zcsm',
           name:'zcsm',
-          meta:'注册声明-图说理工',
+          meta:{title:'注册声明-图说理工'},
           component:()=>import('../views/zcsm')
         },
         {
           path:'search_result/:search_content',
           name:'search_result',
+          meta:{search:true},
+          component:()=>import('../views/search_result')
+        },
+        {
+          path:'cates',
+          name:'cates',
+          meta:{search:true},
           component:()=>import('../views/search_result')
         }
+
       ]
     },
   ],
@@ -131,8 +140,10 @@ router.beforeEach((to,from,next)=>{
       })
     }
     if(to.name==='search_result'){
-      store.commit('SET_SEARCH_CONTENT',to.params.search_content)
       document.title=to.params.search_content
+    }
+    if(to.name==='cates'){
+      document.title=to.query.cate
     }
   }
   if(!cookie.getCookie('token')){

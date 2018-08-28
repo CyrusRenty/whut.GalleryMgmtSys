@@ -51,6 +51,9 @@ export function getCertification() {
 export function getComment(image_id) {
   return axios.get(`${api}/comment/?${image_id}`)
 }
+export function getAllTitle() {
+  return axios.get(`${api}/group/?show=true`)
+}
 export function getTitle() {
   return axios.get(`${api}/group/`)
 }

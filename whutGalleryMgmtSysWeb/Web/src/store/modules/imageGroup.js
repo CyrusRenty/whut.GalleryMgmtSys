@@ -21,12 +21,16 @@ const imageGroup={
     search_count:0,
     title:[],
     image_main:'',
-    next_cates:''
+    next_cates:'',
+    position:[]
   },
   mutations:{
     SET_IMAGEGROUPI:(state,data)=>{
       state.image=data.results
       state.search_count=data.count
+      if(data.count===0)
+        this.no_result=true
+      else this.no_result=false
     },
     SET_IMAGEGROUP:(state)=>{
       state.image=[]
@@ -67,9 +71,6 @@ const imageGroup={
     SET_COMMENT_NEXT_PAGE:(state,data)=>{
       state.comment_next_page=data
     },
-    SET_SEARCH_CONTENT:(state,data)=>{
-      state.search_content=data
-    },
     SET_NO_RESULT:(state,data)=>{
       state.no_result=data
     },
@@ -81,6 +82,9 @@ const imageGroup={
     },
     SET_NEXT_CATES:(state,data)=>{
       state.next_cates=data
+    },
+    SET_POSITION:(state,data)=>{
+      state.position=data
     }
   },
   actions:{

@@ -5,14 +5,13 @@
      <div class="cates-choice">
        <div class="position">
          <span >当前位置：</span><span v-if="!position.length" ><span class="all">全部</span><span> > </span></span>
-         <span v-for="item in position"><span class="position-item" ><span>{{item}}</span><a @click="deletePosition(item)" title="点击返回">×</a></span><span> > </span></span>
+         <span v-for="(item,index) in position"><span class="position-item" ><span>{{item.name}}</span><a @click="deletePosition(item,index)" title="点击返回">×</a></span><span> > </span></span>
          <span>  {{search_content}}  </span>
          <span class="count">&nbsp;&nbsp;共{{count}}个结果</span>
        </div>
        <div class="classify">
          <span class="first-title">分类：</span><span><a @click="searchAll" ref="all">全部</a>
          <a v-for="(item,index) in cates_" @click="choiceCate(item,index)" ref="title" :class="{'active':index===aIndex}">{{item.name}}</a>
-         <!--<a v-for="item in kids" v-if="kids.length" @click="choiceCate(item)" >{{item.name}}</a>-->
        </span>
        </div>
        <div class="format">
@@ -27,7 +26,7 @@
         <span class="first-title">排序：</span>
         <span><a v-for="(item,index) in order" ref="order" @click="choiceOrder(item,index)">{{item}}</a></span>
         <div class="search">
-          <input id="search" type="text" placeholder="请输入关键字查询"  @keyup.enter="startSearch" v-model="search" ref="search_input" autocomplete="none"/>
+          <input id="search" type="text" placeholder="请输入关键字查询"  @keyup.enter="startSearch" v-model="search" autocomplete="none"/>
           <label for="search" class="label" @click="startSearch"></label>
         </div>
       </div>
@@ -50,8 +49,7 @@
   import tslg_header from '../components/body/tslg_header'
   import tslg_footer from '../components/body/tslg_footer'
   import image_card from '../components/card/main_image_card'
-  import {setTitle} from "../utils/user";
-  import {getTitle} from '../api/get'
+  import {getAllTitle} from '../api/get'
     export default {
         name: "search_result",
       components:{
@@ -69,6 +67,7 @@
             format:['全部','PNG','JPEG','PSD'],
             order:['最新上传','点赞最多','收藏最多'],
             cates_string:'',
+            up_cates_string:'',
             last_kids:[],
             search:'',
             page:[1,2,3,4,5,6],
@@ -76,13 +75,17 @@
             show_last:false,
             show_last_num:false,
             aIndex:-1,
-            cur_page:1
+            cur_page:1,
+            cur_format:'',
+            cur_order:'add_time'
           }
       },
       computed:{
           search_content(){
-            // this.cates_string=this.$store.state.imageGroup.search_content
-            return this.$store.state.imageGroup.search_content
+            let search_content=this.$router.currentRoute.params.search_content
+            if(search_content)
+            return search_content
+            else return ''
           },
           count(){
             return this.$store.state.imageGroup.search_count
@@ -90,133 +93,114 @@
           page_num(){
             return Math.ceil(this.$store.state.imageGroup.search_count/8)
           }
-          // cates(){
-          //   return this.$store.state.imageGroup.title
-          //  }
        },
       created(){
-        // setTitle()
         this.getCates()
-        this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&page=1`)
-        this.$store.dispatch('setImageGroupT').then(()=>{})
+        if(this.$router.currentRoute.params.search_content){
+          this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&page=1`)
+          this.$store.dispatch('setImageGroupT').then(()=>{})
+        }
       },
       mounted(){
         this.$refs.format_radio[0].checked=true
-        this.$refs.all.style.color='#9ad3e2'
-        this.$refs.order[0].style.color='#9ad3e2'
+        this.$refs.all.style.color='#ffd100'
+        this.$refs.order[0].style.color='#ffd100'
         if(this.page_num>7){
           this.show_last=true
         }
         if(this.page_num>6){
           this.show_last_num=true
         }
+        console.log(this.aIndex)
       },
       methods:{
           getCates(){
-            getTitle().then((res)=>{
+            getAllTitle().then((res)=>{
               this.cates=res.data
               this.cates_=res.data
-              console.log(this.cates)
+              let query=this.$router.currentRoute.query
+              if(query.index){
+                let len=query.index.length
+                for(let i=0;i<len;i++){
+                 this.set(this.cates_[query.index[i]],query.index[i])
+                }
+                this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&cates=${this.cates_string}&ordering=${this.cur_order}&pattern=${this.cur_format}`)
+                this.$store.commit('SET_IMAGEGROUP');
+                this.$store.dispatch('setImageGroupT')
+                if(len>1){
+                  this.$nextTick(()=>{
+                    this.aIndex=parseInt(query.index[len-1])
+                  })
+                }
+              }
             })
           },
-          getImage(){
-            this.$store.commit('SET_NEXT_SEARCH',`images/search=${this.search_content}&page=1`)
-          },
-        choiceCate(item,index){
+        set(item,index){
+          this.cates_string=item.name
+          item.index=index
+          if(this.position.length){
+            if(this.position[this.position.length-1].kids.length){
+              this.position.push(item)
+            }else this.position[this.position.length-1]=item
+          }else  this.position.push(item)
+          this.last_kids.push(index)
           if(item.kids.length){
-            if(this.cates_string)
-            this.cates_string=item.name+','+this.cates_string
-            else  this.cates_string=item.name
-            if(item.name!==this.search_content){
-              this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&cates=${this.cates_string}`)
-              this.$store.dispatch('setImageGroupT').then(()=>{})
-            }
-            //this.$store.commit('SET_NEXT_CATES',`cates=${this.cates_string}`)
-            this.last_kids.push(index)
-            this.position.push(item.name)
             this.first=false
             this.cates_=item.kids
+            this.up_cates_string=this.cates_string
           }else{
-            if(item.name!==this.search_content){
-              if(this.cates_string)
-                this.cates_string=item.name+','+this.cates_string
-              else  this.cates_string=item.name
-              this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&cates=${this.cates_string}`)
-              this.$store.dispatch('setImageGroupT').then(()=>{})
-              //this.$store.commit('SET_NEXT_CATES',`cates=${this.cates_string+','+item.name}`)
-              this.setColor(index)
-            }
-
+            this.setColor(index)
           }
-          this.$store.commit('SET_IMAGEGROUP');
-          this.$store.dispatch('setCates').then(()=>{})
+          return
         },
-        deletePosition(item){
-            let position=this.last_kids
-            this.last_kids.splice(position-1,1)
-            console.log(this.last_kids)
-            let len=this.last_kids.length
-            if(len<2){
-                this.cates_=this.cates
-            }else{
-              let kids=this.cates[position[0]].kids
-              if(len<3){
-                this.cates_=kids
-              }else{
-                for(let i=1;i<len-1;i++){
-                  kids=kids[position[i]].kids
-                }
-                this.cates_=kids
-              }
-            }
-          this.$refs.all.style.color='#9ad3e2'
-          this.aIndex=-1
-          this.position.splice(this.position.indexOf(item),1)
-          this.cates_string=this.cates_string.replace(',','')
-          this.cates_string=this.cates_string.split(item)
-          if(this.cates_string.length>2)
-            this.cates_string=this.cates_string.join(',')
-          else this.cates_string=this.cates_string.join('')
-          this.$store.commit('SET_NEXT_CATES',`cates=${this.cates_string}`)
+        actionDis(){
           this.$store.commit('SET_IMAGEGROUP');
-          this.$store.dispatch('setCates').then(()=>{})
+          this.$store.dispatch('setImageGroupT')
+          this.cur_page=1
+        },
+        choiceCate(item,index){
+         this.set(item,index)
+          this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&cates=${this.cates_string}&ordering=${this.cur_order}&pattern=${this.cur_format}`)
+          this.actionDis()
+        },
+        deletePosition(item,index){
+            let position=this.position
+            if(index===0){
+              this.cates_=this.cates
+              this.cates_string=''
+            }
+            else{
+              this.cates_=position[index-1].kids
+              this.cates_string=position[index-1].name
+            }
+          this.$refs.all.style.color='#ffd100'
+          this.aIndex=-1
+          this.position.splice(index,position.length-index)
+          this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&cates=${this.cates_string}&ordering=${this.cur_order}&pattern=${this.cur_format}`)
+          this.actionDis()
         },
         searchAll(){
-          this.$refs.all.style.color='#9ad3e2'
+          this.$refs.all.style.color='#ffd100'
           this.aIndex=-1
-          if(this.cates_string){
-            this.$store.commit('SET_NEXT_CATES',`cates=${this.cates_string}`)
-            this.$store.commit('SET_IMAGEGROUP');
-            this.$store.dispatch('setCates').then(()=>{})
-          }
+          this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&cates=${this.up_cates_string}&ordering=${this.cur_order}&pattern=${this.cur_format}`)
+          this.actionDis()
         },
         setColor(index){
           this.$refs.all.style.color='#4a4a4a'
           this.aIndex=index
         },
         choiceFormat(item){
-            // if(this.cates_string){
-              if(item==='全部'){
-                console.log('in')
-                this.$store.commit('SET_NEXT_CATES',`cates=${this.cates_string}`)
-              }else{
-                this.$store.commit('SET_NEXT_CATES',`cates=${this.cates_string}&pattern=${item}`)
-              }
-              this.$store.commit('SET_IMAGEGROUP');
-              this.$store.dispatch('setCates').then(()=>{})
-            // }else{
-            //   if(item==="全部"){
-            //     this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&page=1`)
-            //   }else
-            //   this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&page=1&pattern=${item}`)
-            //   this.$store.dispatch('setImageGroupT').then(()=>{})
-            // }
+          if(item==="全部")
+            item = ''
+          this.cur_format = item
+          this.$store.commit('SET_NEXT_SEARCH', `images/?search=${this.search_content}&page=1&cates=${this.cates_string}&pattern=${item}&ordering=${this.cur_order}`)
+          this.actionDis()
         },
         choiceOrder(item,index){
           for(let i=0;i<3;i++){
             this.$refs.order[i].style.color='#4a4a4a'
           }
-          this.$refs.order[index].style.color='#9ad3e2'
+          this.$refs.order[index].style.color='#ffd100'
           switch(item){
             case '最新上传':{
               item='add_time';
@@ -231,24 +215,13 @@
               break
             }
           }
-            // if(this.cates_string){
-              if(item==='默认'){
-                this.$store.commit('SET_NEXT_CATES',`cates=${this.cates_string}`)
-              }else {
-                this.$store.commit('SET_NEXT_CATES',`cates=${this.cates_string}&ordering=${item}`)
-                this.$store.commit('SET_IMAGEGROUP');
-                this.$store.dispatch('setCates').then(()=>{})
-              }
-            // }else{
-            //   this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&page=1&ordering=${item}`)
-            //   this.$store.dispatch('setImageGroupT').then(()=>{})
-            // }
+          this.cur_order=item
+          this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&page=1&cates=${this.cates_string}&ordering=${item}&pattern=${this.cur_format}`)
+          this.actionDis()
         },
         startSearch(){
-          if(!this.search_content){
-            this.$refs.search_input.style.border='0.0625rem solid #ff0000'
+          if(!this.search)
             return
-          }else this.$refs.search_input.style.border='0.0625rem solid #cecece'
           const {href}=this.$router.resolve({
             name:'search_result',
             params:{search_content:this.search}
@@ -260,9 +233,9 @@
             if(item<=0||item>this.page_num)
               return
             this.cur_page=item
-              this.$store.commit('SET_NEXT_CATES',`cates=${this.cates_string}&page=${item}`)
-              this.$store.commit('SET_IMAGEGROUP');
-              this.$store.dispatch('setCates').then(()=>{})
+          this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&page=${item}&cates=${this.cates_string}&ordering=${this.cur_order}&pattern=${this.cur_format}`)
+          this.$store.commit('SET_IMAGEGROUP');
+          this.$store.dispatch('setImageGroupT').then(()=>{})
           if(this.page_num>7){
                 let page_num=this.page_num
             if(item===1){
@@ -281,19 +254,17 @@
             if(item===page_num){
               this.page=[page_num-5,page_num-4,page_num-3,page_num-2,page_num-1,page_num]
               this.show_last=false
-              // this.$refs.last_page.style.background=
             }
           }
-
-
         }
       }
     }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+  @import "../styles/variables";
   .search_result{
-    background: #f7fafb;
+    background: $bg;
   }
   .top-items{
     text-align: left;
@@ -312,14 +283,14 @@
     font-size: 1.125rem;
   }
   .position .all{
-    background: #9ad3e2;
+    background: $normal;
     color: #fff;
     height: 1.5625rem;
     display: inline-block;
     padding: 0 .5rem;
   }
   .position-item{
-    background: #9ad3e2;
+    background: $normal;
     display: inline-block;
     height: 1.5625rem;
     color: #fff;
@@ -335,9 +306,9 @@
     position: absolute;
     right: 0;
     text-align:center;
-  }
-  .position-item a:hover{
-    background:#2cbec6;
+    &:hover{
+      background: $hover;
+    }
   }
   .position span:nth-child(1){
     margin-right: .0625rem;
@@ -345,11 +316,6 @@
   .count{
     color: #ff0000;
   }
-
-
-
-
-
   .order{
     height: 4rem;
     padding: 0 6rem;
@@ -370,7 +336,7 @@
     margin-right: 3rem;
   }
   .classify a:hover{
-    color: #9ad3e2;
+    color: $normal;
   }
   .order .search{
     float:right;
@@ -392,9 +358,12 @@
   .label{
     width: 6rem;
     height: 3rem;
-    background:url(../assets/search_white.png) no-repeat center #9dd4e3;
+    background:url(../assets/search_white.png) no-repeat center $normal;
     background-size:37.5%;
     cursor: pointer;
+    &:hover{
+      background-color: $hover;
+    }
   }
 
   .choice-page{
@@ -409,33 +378,37 @@
     border:0.0625rem solid #cecece;
     background:#fff;
     font-size:1.5rem;
-    line-height:3rem;
     margin:0 .375rem;
     cursor:pointer;
+    color: #9b9b9b;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
   .cell:active{
-    background:#9ad3e2;
+    background:$normal;
   }
   .active{
-    color:#9ad3e2;
+    color:$normal;
   }
   .active_page{
-    background:#9ad3e2;
+    background:$normal;
     color:#4a4a4a;
   }
   .choice-page i{
-    display: inline-block;
+    display:block;
     width: 1.25rem;
     height: 1.25rem;
-    -webkit-background-size:cover;
-    background-size: cover;
-    background: url(../assets/pull_down.png) no-repeat center;
+    -webkit-background-size:100% 100%;
+    background-size: 100% 100%;
+    background: url(../assets/right_arrow.png) no-repeat center;
   }
   .right{
-    transform: rotate(90deg);
+    transform: rotate(180deg);
+    margin-left: .3rem;
   }
   .left{
-    transform: rotate(-90deg);
+    margin-right: .3rem;;
   }
 
 
@@ -477,7 +450,7 @@
     content: '';
     width: 0.5rem;
     height: 0.5rem;
-    background: #00a69c;
+    background: $hover;
     position: absolute;
     top: 0.375rem;
     left: 0.375rem;

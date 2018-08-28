@@ -16,6 +16,9 @@ export function upload(data) {
 export function getUserInfo(user_id) {
   return axios.get(`${api}/users/${user_id}/`)
 }
+export function getRankImage(params) {
+  return axios.get(`${api}/users/`)
+}
 export function addImage(data) {
   return axios.post(`${api}/collect/`,data)
 }
