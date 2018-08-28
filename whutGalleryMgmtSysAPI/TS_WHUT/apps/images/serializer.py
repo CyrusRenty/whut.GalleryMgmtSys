@@ -189,8 +189,8 @@ class GroupListSerializer(serializers.ModelSerializer):
             if kid_kids.count():
                 for kid_kid in kid_kids:
                     kid_data.append({
-                        "name": kid.name,
-                        "id": kid.id,
+                        "name": kid_kid.name,
+                        "id": kid_kid.id,
                     })
 
             data.append({
@@ -198,10 +198,11 @@ class GroupListSerializer(serializers.ModelSerializer):
                 "id": kid.id,
                 "kids": kid_data
             })
+        return data
 
     class Meta:
         model = Groups
-        fields = '__all__'
+        fields = ('name', 'id', 'kids')
 
 
 class CommentCreateSerializer(serializers.ModelSerializer):
