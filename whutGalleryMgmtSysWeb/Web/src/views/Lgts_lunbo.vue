@@ -77,7 +77,8 @@
     }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+  @import "../styles/variables";
   ul.slide-pages {
     border-radius: 50%;
   }
@@ -181,6 +182,6 @@
     display: inline-block;
   }
   .a-st{
-    background-color: #9ad3e2;
+    background-color: $normal;
   }
 </style>

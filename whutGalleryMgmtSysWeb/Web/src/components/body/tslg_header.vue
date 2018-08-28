@@ -1,4 +1,6 @@
 <template>
+  <div>
+    <div>
     <div class="tslg-header">
       <i class="logo" @click="goMain"><a href="http://111.231.230.54/tslg/main"></a> </i>
       <div class="nav-warp">
@@ -13,7 +15,6 @@
           <span class="user-option" @click="showUserEdit">修改资料</span>
           <span class="user-option" @click="logout">退出</span>
         </div>
-
       </div>
         <div v-if="!user_image" class="headLink">
           <a @click="goLogin">登录</a>
@@ -21,13 +22,68 @@
         </div>
       </div>
     </div>
+    <div class="search" ref="search" v-if="this.$router.currentRoute.name==='main'">
+      <div v-if="!set_top" class="classify" @mouseenter="showClassifyCard" @mouseleave="showClassifyCard"><i></i>分类
+        <ul v-if="show_title">
+          <li v-for="(item,index) in classify" @click="setSearch(item.name)" @mouseenter="showClassifyCard1(index)" @mouseleave="showClassifyCard1(-1)"><span>{{item.name}}</span>
+          <ul v-if="index===show_title1">
+            <li v-for="(item1,index1) in item.kids" @click="setSearch(item1.name)" @mouseenter="showClassifyCard2(index)" @mouseleave="showClassifyCard2(-1)"><span>{{item1.name}}</span>
+            <ul v-if="index1===show_title2">
+              <li v-for="item2 in item1.kids" @click="setSearch(item2.name)"><span>{{item2.name}}</span></li>
+            </ul>
+            </li>
+          </ul>
+          </li>
+        </ul>
+      </div>
+      <input id="search" type="text" placeholder="请输入关键字查询"  @keyup.enter="startSearch" v-model="search_content" autocomplete="none"/>
+      <label for="search" class="label" @click="startSearch"></label>
+    </div>
+    </div>
+    <div class="tslg-header-top" ref="search" v-if="set_top&&this.$router.currentRoute.meta.search">
+        <i class="logo" @click="goMain"><a href="http://111.231.230.54/tslg/main"></a> </i>
+        <div class="search-top">
+          <div class="classify classify1" @mouseenter="showClassifyCard" @mouseleave="showClassifyCard"><i></i>分类
+            <ul v-if="show_title">
+              <li v-for="(item,index) in classify" @click="setSearch(item.name)" @mouseenter="showClassifyCard1(index)" @mouseleave="showClassifyCard1(-1)"><span>{{item.name}}</span>
+                <ul v-if="index===show_title1">
+                  <li v-for="(item1,index1) in item.kids" @click="setSearch(item1.name)" @mouseenter="showClassifyCard2(index)" @mouseleave="showClassifyCard2(-1)"><span>{{item1.name}}</span>
+                    <ul v-if="index1===show_title2">
+                      <li v-for="item2 in item1.kids" @click="setSearch(item2.name)"><span>{{item2.name}}</span></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+          <input id="search1" type="text" placeholder="请输入关键字查询"  @keyup.enter="startSearch" v-model="search_content"/>
+          <label for="search1" class="label" @click="startSearch"></label>
+        </div>
+        <div class="header-left">
+          <div class="person-img-wrap" @mouseenter="showOptions" @mouseleave="unShowOptions" v-if="user_image" >
+            <i :style="{'background-image':`url(${user_image})`,'background-size':'100% 100%','background-position':'center'}" @click="getInPerson" class="person-img"></i>
+            <div class="username"> {{username}}</div>
+            <div class="user-option-wrap" v-if="show_option">
+              <span class="user-option" @click="getInPerson">个人主页</span>
+              <span class="user-option" @click="showUserEdit">修改资料</span>
+              <span class="user-option" @click="logout">退出</span>
+            </div>
+          </div>
+          <div v-if="!user_image" class="headLink">
+            <a @click="goLogin">登录</a>
+            <a class="borderSpan" @click="goRegister">注册</a>
+          </div>
+        </div>
+    </div>
+  </div>
 </template>
 
 <script>
-  import {goLogin, goRegister} from "../../utils/user";
+  import {goLogin, goRegister, setTitle} from "../../utils/user";
 
   import editProfile from '../editProfile'
   import cookie from '../../utils/cookie'
+  import {getAllTitle} from "../../api/get";
   export default {
       name: "Lgts_head",
       components:{
@@ -35,7 +91,6 @@
       },
       data(){
         return {
-          search_content:'',
           isS:false,
           show_option:false,
           showEdit:false,
@@ -44,6 +99,12 @@
             {title:'排行榜',route:'/tslg/ranking_list'},
             {title:'签约摄影师',route:'/tslg/signed_list'}
           ],
+          search_content:'',
+          set_top:false,
+          show_title:false,
+          show_title1:-1,
+          show_title2:-1,
+          classify:[]
         }
       },
     computed:{
@@ -52,17 +113,19 @@
       },
       username(){
         return this.$store.state.user.userInfo.username
-      }
+      },
+      // classify(){
+      //   return this.$store.state.imageGroup.title
+      // }
     },
     created(){
-        if(cookie.getCookie('user_id')){
-          if(!this.$store.state.user.userInfo)
-            this.$store.dispatch('GetUserInfo').then(()=>{
-              console.log('个人信息获取成功')
-            }).catch(()=>{
-              console.log('获取个人信息失败')
-            })
-        }
+      setTitle()
+      getAllTitle().then((res)=>{
+        this.classify=res.data
+      })
+    },
+    mounted(){
+      window.addEventListener('scroll',this.setSearchTop)
     },
       methods:{
         getInPerson(){
@@ -90,26 +153,61 @@
         },
         goRegister(){
           goRegister()
+        },
+        showClassifyCard(){
+          this.show_title=!this.show_title
+        },
+        showClassifyCard1(index){
+          this.show_title1=index
+        },
+        showClassifyCard2(index){
+          this.show_title2=index
+        },
+        startSearch(){
+          if(!this.search_content)
+            return
+          const {href}=this.$router.resolve({
+            name:'search_result',
+            params:{search_content:this.search_content}
+          })
+          window.open(href,'_blank')
+        },
+        setSearch(text){
+          this.search_content=text;
+          this.startSearch()
+        },
+        setSearchTop(){
+          if(document.documentElement.scrollTop>140)
+            this.set_top=true
+          else
+            this.set_top=false
         }
       },
     }
 </script>
 
-<style scoped>
-
-  .tslg-header{
+<style lang="scss" scoped>
+  @import "../../styles/variables";
+  .tslg-header,.tslg-header-top{
     display: flex;
-    height:4rem;
+    height: 4rem;
     width: 100%;
-    background-color: #F7FAFB;
+    background-color: #fefefe;
     box-sizing: border-box;
     padding: 0 2.625rem;
     justify-content: space-between;
     align-items: center;
-    border-bottom:1px solid #cecece;
+    border-bottom:0.0625rem solid #e9e9e9;
+  }
+  .tslg-header-top{
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    height: 4rem;
   }
   .logo{
-     background: url(../../assets/header_logo.png);
+     background: url(../../assets/logo.svg);
      background-size: cover;
      height: 1.875rem;
      width: 6.4rem;
@@ -129,7 +227,7 @@
      margin-right: 2rem;
    }
   .router-link-active{
-     color: #9ad4e2;
+     color:$normal;
    }
 
   .person-img-wrap{
@@ -149,14 +247,14 @@
   }
 
   .active_nav{
-    color: #9AD3E2;
+    color: $normal;
   }
   .user-option-wrap{
     width: 7.5rem;
     height: 9rem;
     display: flex;
     flex-direction: column;
-    background: white;
+    background: #fff;
     position: absolute;
     right: 2rem;
     top:4rem;
@@ -179,7 +277,7 @@
   }
 
   .user-option:hover{
-    color: #9ad3e2;
+    color: $normal;
   }
   .headLink a{
     font-size:1.5rem;
@@ -189,10 +287,97 @@
   .headLink a.borderSpan{
     border-left:0.0625rem solid #000;
   }
-  .tslg-header .username{
+  .username{
     /*font-weight: 600;*/
     margin-left: .5rem;
     font-size: 1.5rem;
+  }
+  .search{
+    height: 3.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin: 1.5rem 0;
+  }
+  .search-top{
+    height: 3rem;
+    width: 52.5625rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-left: .5rem;
+  }
+  .classify{
+    height: 100%;
+    width: 6rem;
+    background: #eaeaea;
+    position: relative;
+    font-size: 1.25rem;
+    padding:0 1rem;
+    line-height: 2.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+  }
+  .classify i{
+    display: inline-block;
+    height: 1.25rem;
+    width: 1.125rem;
+    background: url(../../assets/sort.png) no-repeat center;
+    background-size: 100% 100%;
+    margin-right: 0.25rem;
+  }
+  .classify ul{
+    z-index: 2;
+    position: absolute;
+    top: 3.5rem;
+    left: 0;
+    font-size: 1.25rem;
+    background: #fff;
+    width:7.5rem;
+    box-shadow:0 0 4px $f-light;
+    ul{
+      top: 0;
+      left: 7.5rem;
+      li{
+        color: $f-deep;
+        &:hover{
+          color: $normal;
+        }
+      }
+    }
+  }
+  .classify li{
+    position: relative;
+    height: 3rem;
+    line-height: 3rem;
+    &:hover{
+      color: $normal;
+    }
+  }
+  .classify1 ul{
+    top: 3rem;
+  }
+
+  #search,#search1{
+    font-size: 1.25rem;
+    height: 100%;
+    border: 0.0625rem solid #cecece;
+    width: 40.5625rem;
+    text-indent: 1.5rem;
+    background: #fff;
+  }
+  .label{
+    width: 6rem;
+    height: 100%;
+    background:url(../../assets/search_white.png) no-repeat center $normal;
+    background-size:37.5%;
+    cursor: pointer;
+    &:hover{
+      background-color: $hover;
+    }
   }
 
 </style>

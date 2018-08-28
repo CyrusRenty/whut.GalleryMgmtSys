@@ -1,7 +1,7 @@
 <template>
   <div class="main">
     <Lgts_head/>
-    <main_search/>
+    <!--<main_search/>-->
     <Lgts_lunbo/>
     <!--<lgts_nav/>-->
     <!--<Lgts_image/>-->
@@ -41,15 +41,9 @@
     }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+  @import "../styles/variables";
  .main{
-   background: #f7fafb;
+   background: $bg;
  }
-
-  .margin-b{
-    margin-bottom: 1.25rem;
-  }
-  .margin-t{
-    margin-top: 1.25rem;
-  }
 </style>

@@ -111,6 +111,8 @@
               this.$refs.chagng_zybj.style.border='0.0625rem #ff0000 solid';
               return
             }
+            if(this.hint_desc)
+              return
             let data=new FormData;
             if(this.image){
               data.append('image',this.image)
@@ -195,7 +197,8 @@
                   length+=2
                 }else length+=1
               }
-              if(length>20){
+              if(length>21){
+                this.desc=this.desc.substring(0,21)
                 this.hint_desc='简介过长'
                 this.$refs.change_desc.style.border='#ff0000 0.0625rem solid'
               }

@@ -39,15 +39,16 @@
   }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+  $word:#e9e9e9;
+
   .footer{
     width: 100%;
-    background-color:white;
+    background-color:#3d3d42;
     padding: 6.5rem 0;
-
-  }
-  .footer a{
-    color: #9b9b9b;
+    a{
+      color: $word;
+    }
   }
   .footer .footer-left{
     display: inline-block;
@@ -90,6 +91,7 @@
     margin: 0;
     padding-top: 0;
     padding-bottom: 2rem;
+    color:$word;
   }
 
   .icon-phone{

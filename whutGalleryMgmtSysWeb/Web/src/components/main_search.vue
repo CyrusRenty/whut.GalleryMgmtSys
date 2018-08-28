@@ -57,18 +57,6 @@
             this.$refs.search_input.style.border='0.0625rem solid #ff0000'
             return
           }else this.$refs.search_input.style.border='0.0625rem solid #cecece'
-
-            // if(this.$router.currentRoute.name!=='main')
-            //   this.$router.push('/tslg/main')
-            // this.$store.commit('SET_STATUS','special')
-            // this.$store.commit('SET_NEXT_SEARCH',`images/search=${this.search_content}&page=1`)
-            // this.$store.commit('SET_IMAGEGROUP')
-            // this.$store.dispatch('setImageGroupT').then(()=>{
-            //   if(!this.$store.state.imageGroup.image.length)
-            //     this.$store.commit('SET_NO_RESULT',true)
-            //   this.$store.commit('SET_SEARCH_CONTEXT',this.search_content)
-            //   this.search_content=''
-            // })
           const {href}=this.$router.resolve({
               name:'search_result',
             params:{search_content:this.search_content}
@@ -77,7 +65,6 @@
         },
         setSearch(text){
           this.search_content=text;
-          //this.startSearch()
         },
         setSearchTop(){
           if(document.documentElement.scrollTop>160)

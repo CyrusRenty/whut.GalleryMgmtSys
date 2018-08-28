@@ -2,8 +2,8 @@
     <div id="main-image" v-if="nav_items.length">
       <div v-for="(item,index) in nav_items" class="main-item-box" >
         <div class="title-wrap">
-           <a>{{item.name}}</a><a v-for="item_title in item.kids">{{item_title.name}}</a>
-          <a class="more">更多</a>
+           <a @click="goBCates(item.name,index)">{{item.name}}</a><a v-for="(item_title,title_index) in item.kids" @click="goSCates(item_title.name,index,title_index)">{{item_title.name}}</a>
+          <a class="more" @click="goBCates(item.name,index)">更多 ></a>
         </div>
         <div class="main-image clear" >
           <div v-for="(item_image,image_index) in item.image" class="image-box image-item" >
@@ -62,7 +62,6 @@
   import {setFollow, setLike, setUnFollow, setUnLike} from "../api/action";
   import {getInOtherUser, setDownload, setImageInfo} from "../utils/user";
   import {getTitle, getTypeImage} from "../api/get";
-  //https://i.pinimg.com/564x/89/f5/6f/89f56ff9fb2d02c2e3673d1513d93ad1.jpg
     export default {
         name: "main_image",
       data(){
@@ -82,10 +81,8 @@
           },
       },
       created(){
-         setTitle()
       },
       mounted(){
-          console.log(this.nav_items)
       },
       methods:{
         setLike(id,index,image_index){
@@ -152,20 +149,52 @@
         getInOtherUser(id){
           getInOtherUser(id)
         },
+        goSCates(item,index,index1){
+          let s_index=[index,index1]
+          console.log(s_index)
+          let cate={
+            cate:item,
+            index:s_index
+          }
+          console.log(cate)
+          const {href}=this.$router.resolve({
+           path:'cates',
+            query:{
+              cate:item,
+              index:s_index
+            }
+          })
+          window.open(href,'_blank')
+        },
+        goBCates(item,index){
+          let s_index=[index]
+          console.log(s_index)
+          const {href}=this.$router.resolve({
+            path:'cates',
+            query:{
+              cate:item,
+              index:s_index
+            }
+          })
+          window.open(href,'_blank')
+        }
       }
     }
 </script>
 
 <style lang="scss" scoped>
+  @import "../styles/variables";
   #main-image{
     width: 111rem;
-    margin: 3.75rem auto;
-    background: #f7fafb;
+    margin: 3.75rem auto 5rem;
+    background: $bg;
+    min-height: 80rem;
   }
   .main-item-box{
     text-align: left;
     height: 35.32rem;
     margin-bottom: 3.75rem;
+    background: $bg;
   }
   .title-wrap{
     margin-left: 1.5rem;
@@ -176,34 +205,37 @@
     font-size: 1.25rem;
     color: #9b9b9b;
     cursor: pointer;
-  }
-  .title-wrap a:hover{
-    color: #9ad3e2;
+    &:hover{
+      color: $normal;
+    }
   }
   .title-wrap a:nth-child(1){
     font-weight: 600;
     font-size: 1.5rem;
     color: #4a4a4a;
   }
-  .title-wrap .more{
-    float: right;
-    margin-right: 1.5rem;
-    display: flex;
-    align-items: center;
-  }
-  .title-wrap .more:after{
-    content: '';
-    background: url(../assets/pull_down.png);
-    background-size: 100% 100%;
-    width: 1.2rem;
-    height: .7rem;
-    -webkit-transform: rotate(-90deg);
-    transform: rotate(-90deg);
-    display: inline-block;
-    margin-left: .3rem;
+  .title-wrap{
+    .more{
+      float: right;
+      margin-right: 1.5rem;
+      display: flex;
+      align-items: center;
+      /*<!--&:after{-->*/
+        /*<!--content: '';-->*/
+        /*<!--background: url(../assets/pull_down.png);-->*/
+        /*<!--background-size: 100% 100%;-->*/
+        /*<!--width: 1rem;-->*/
+        /*<!--height: .5rem;-->*/
+        /*<!-- -webkit-transform: rotate(-90deg);-->*/
+        /*<!--transform: rotate(-90deg);-->*/
+        /*<!--display: inline-block;-->*/
+        /*<!--margin-left: .2rem;-->*/
+        /*<!--margin-top: .1rem;-->*/
+      /*<!--}-->*/
+    }
   }
   .image-box{
-    background: #fff;
+    background: #fefefe;
     width:24.75rem;
     height: 32.32rem;
     float: left ;
@@ -225,9 +257,9 @@
     background: rgba(0,0,0,.6);
     opacity: 0;
     cursor: pointer;
-  }
-  .image-content .image-up:hover{
+    &:hover{
       opacity: 1;
+    }
   }
   .image-name{
     font-size: 1.25rem;
@@ -240,56 +272,12 @@
     top: 1.68rem;
     right: 1.375rem;
   }
-   .collect-btn,.like-btn{
-    display: inline-block;
-    float: right;
-    line-height: 1.375rem;
-    height: 1.375rem;
-    cursor: pointer;
-    color: #fff;
-    border: 0.0625rem solid #fff;
-    border-radius: 1.375rem;
-    padding: 0.3125rem 0.625rem;
-    box-sizing: content-box;
-  }
-   .like-btn{
-    margin-right: 0.625rem;
-  }
-   .btn-img{
-    width: 1.375rem;
-  }
    .btn-span{
     padding-left: 0.3215rem;
     float: right;
   }
-   .btn-active{
-    border:0.0625rem solid #9AD3E2;
-    color:#9AD3E2;
-  }
-   .download-warp{
-    width: 11.25rem;
-    height: 3rem;
-    background: #fff;
-    border-radius: 3rem;
-    position: absolute;
-    z-index: 1;
-    bottom:0;
-     right:0;
-     left: 0;
-     top: 0;
-     margin: auto;
-     line-height:3rem ;
-     cursor: pointer;
-     display: flex;
-     justify-content: center;
-     align-items: center;
-  }
-   .download-img{
-    width: 1.6rem;
-     height: 1rem;
-  }
    .download-span{
-     font-size: 0.875rem;
+     font-size: $xsx;
      font-weight: 600;
      font-family: 'HiraginoSansGB';
   }

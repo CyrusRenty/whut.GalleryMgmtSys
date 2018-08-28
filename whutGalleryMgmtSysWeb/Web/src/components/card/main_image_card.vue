@@ -90,10 +90,6 @@
         }
        },
       created(){
-        // this.$store.commit('SET_MAIN_SEARCH',true)
-        // if(this.$store.state.imageGroup.status==='normal'&&!this.$store.state.imageGroup.image.length)
-        // this.$store.dispatch('setImageGroupI').then(()=>{
-        // })
       },
       mounted(){
       },

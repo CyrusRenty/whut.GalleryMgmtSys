@@ -90,7 +90,8 @@
     }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+  @import "../styles/variables";
   /*声明页面的头部样式*/
   .declareHead{
     height:5rem;
@@ -126,7 +127,7 @@
     float: left;
     height: 1.875rem;
     width: 6.3125rem;
-    background: url(../assets/header_logo.png) center;
+    background: url(../assets/logo.svg) center;
     background-size:100% 100%;
     cursor: pointer;
   }
@@ -182,28 +183,28 @@
     padding-left: 2rem;
   }
   .a_active{
-    color: #9ad3e2;
+    color: $normal;
   }
   .content-right{
     float: left;
     width:90rem;
-    background:#f7fafb;
+    background:$bg;
     padding:2rem 2rem;
     font-size:1.1rem;
   }
   .registerTitle{
     display: inline-block;
-    color: #9ad3e2;
-    border-bottom: 5px solid #9ad3e2;
-    font-size: 22px;
+    color: $normal;
+    border-bottom: .3125rem solid $normal;
+    font-size: $xls;
   }
   h2.registerTitle{
     font-weight: 700;
-    padding-bottom: 16px;
-    margin-bottom: 16px;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
   }
   .declareDetail p{
-    padding-bottom: 0px;
+    padding-bottom: 0;
   }
   p.nowrap{
     font-size: 1.1rem;
