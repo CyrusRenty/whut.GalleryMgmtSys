@@ -12,10 +12,14 @@ from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 # from rest_framework_extensions.cache.mixins import CacheResponseMixin  # 缓存
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle  # 限速
 import jieba
+import datetime
+from django.db.models import Count
 
 from .models import ImageModel, BannerModel, Comment, SearchWord, Groups, GroupImage
+from operations.models import DownloadShip, UserFolderImage, LikeShip, Follow
 from .serializer import (ImageSerializer, ImageCreateSerializer, BannerSerializer, CommentListSerializer,
-                         CommentCreateSerializer, BannerOneSerializer, SearchWordSerializer, GroupListSerializer)
+                         CommentCreateSerializer, BannerOneSerializer, SearchWordSerializer, GroupListSerializer,
+                         ImageUpdateSerializer)
 from .filters import ImageFilter, CommentFilter
 
 
@@ -40,16 +44,16 @@ def check_cates(instance):
     """
     i = instance.level
     if i > 1:
-        instance = Groups.objects.filter(parent=instance, if_show=True)
+        instance = Groups.objects.filter(parent=instance)
         i -= 1
         while i > 1:
-            instance = Groups.objects.filter(parent__in=instance, if_show=True)
+            instance = Groups.objects.filter(parent__in=instance)
             i -= 1
         # 如果涉及到增加第三层
-        q2 = Groups.objects.filter(parent__in=instance, if_show=True)
+        q2 = Groups.objects.filter(parent__in=instance)
     else:
         # 如果涉及到增加第三层
-        q2 = Groups.objects.filter(parent=instance, if_show=True)
+        q2 = Groups.objects.filter(parent=instance)
 
     return instance, q2
 
@@ -123,9 +127,6 @@ class GroupsViewset(mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.G
 
     def get_serializer_class(self):
         if self.action == 'list':
-            # 如果有第三层
-            # if Groups.objects.filter(level=0).count():
-            #     return GroupList0Serializer
             return GroupListSerializer
         return ImageSerializer
 
@@ -184,11 +185,50 @@ def save_hot_word(search_word):
     return q
 
 
-class ImageViewset(mixins.ListModelMixin,
-                   mixins.RetrieveModelMixin,
-                   mixins.CreateModelMixin,
-                   mixins.DestroyModelMixin,
-                   viewsets.GenericViewSet):
+def get_upload_nums(user):
+    return ImageModel.objects.filter(user=user, if_active=1).count()
+
+
+def get_if_like(request, image):
+    if not request.user.is_authenticated:
+        return False
+    ship = LikeShip.objects.filter(user_id=request.user.id, image_id=image.id)
+    if ship.count():
+        return ship[0].id
+    return False
+
+
+def get_user_data(image):
+    user = image.user
+    return {
+        "image": user.image.url,
+        "id": user.id,
+        "username": user.username,
+        "upload_nums": get_upload_nums(user),
+        "fan_nums": user.fan_nums
+    }
+
+
+def get_if_follow(request, image):
+    # 是否关注上传者
+    if not request.user.is_authenticated:
+        return False
+    ship = Follow.objects.filter(fan_id=request.user.id, follow_id=image.user.id)
+    if ship.count():
+        return ship[0].id
+    return False
+
+
+def get_if_collect(request, image):
+    if not request.user.is_authenticated:
+        return False
+    ship = UserFolderImage.objects.filter(user_id=request.user.id, image_id=image.id)
+    if ship.count():
+        return ship[0].id
+    return False
+
+
+class ImageViewset(viewsets.ModelViewSet):
     """
     list:
         显示所有图片,时间倒序
@@ -198,17 +238,19 @@ class ImageViewset(mixins.ListModelMixin,
         显示一张图片
     destroy:
         删除一张图片
+    update:
+        修改一张图片
     """
     throttle_classes = (UserRateThrottle, AnonRateThrottle)
     serializer_class = ImageSerializer
     pagination_class = ImagePagination
     filter_backends = (DjangoFilterBackend, filters.OrderingFilter,)
     filter_class = ImageFilter
-    ordering_fields = ('add_time', 'like_nums', 'collection_nums')
+    ordering_fields = ('add_time', 'like_nums', 'collection_nums', 'download_nums')
     authentication_classes = (JSONWebTokenAuthentication, authentication.SessionAuthentication)
 
     def get_permissions(self):
-        if self.action in ('create', 'destroy', 'retrieve'):
+        if self.action in ('create', 'destroy', 'update'):
             return [permissions.IsAuthenticated()]
         return []
 
@@ -216,6 +258,8 @@ class ImageViewset(mixins.ListModelMixin,
         # 删除只能是上传者
         if self.action == 'destroy':
             return ImageModel.objects.filter(user=self.request.user)
+        if self.action == 'update':
+            return ImageModel.objects.filter(user=self.request.user, if_active=4)
         return ImageModel.objects.filter(if_active=1)
 
     def get_serializer_class(self):
@@ -223,6 +267,8 @@ class ImageViewset(mixins.ListModelMixin,
             return ImageSerializer
         elif self.action == 'create':
             return ImageCreateSerializer
+        elif self.action == 'update':
+            return ImageUpdateSerializer
         return ImageSerializer
 
     def get_serializer_context(self):
@@ -243,30 +289,109 @@ class ImageViewset(mixins.ListModelMixin,
             'view': self
         }
 
-    def list(self, request, *args, **kwargs):
-        # 检索
-        queryset = None
-        search = request.GET.get('search')
-        if search:
-            queryset = ImageModel.objects.filter(save_hot_word(search)).filter(if_active=True)
+    def page_serializer(self, qs, page, request, Klass):
+        """
+        分页和序列化, 不能直接用id筛选再序列化, 因为有一个图片顺序, 所以只有自己序列化了
+        """
+        sum_qs = qs.count()
+        if (page - 1) * 8 > sum_qs:
+            return Response([])
+        if page * 8 < sum_qs:
+            qs = qs[(page - 1) * 8:page * 8]
+            next_page = page + 1
+        else:
+            qs = qs[(page - 1) * 8:]
+            next_page = None
 
-        # 筛选分类
-        cates = request.GET.get('cates')
-        if cates:
-            if queryset:
-                queryset = self.filter_queryset(filter_cate(cates, queryset))
+        # 序列化
+        results = []
+        for q in qs:
+            image = ImageModel.objects.get(id=q['image'])
+            if isinstance(Klass, DownloadShip):
+                download_nums = q['total_image']
+                collection_nums = image.collection_nums
             else:
-                queryset = self.filter_queryset(filter_cate(cates, ImageModel.objects.all()))
-        elif queryset:
+                download_nums = image.download_nums
+                collection_nums = q['total_image']
+            results.append({
+                "id": image.id,
+                "name": image.name,
+                "cates": image.cates,
+                "like_nums": image.like_nums,
+                "collection_nums": collection_nums,
+                "download_nums": download_nums,
+                "user": get_user_data(image),
+                "image": image.image['avatar'].url,
+                "if_like": get_if_like(request, image),
+                "if_follow": get_if_follow(request, image),
+                "if_collect": get_if_collect(request, image)
+            })
+
+        return Response({
+            "count": sum_qs,
+            "next": next_page,
+            "results": results
+        })
+
+    def rank(self, kw, time, request):
+        """周,月排行榜"""
+        # 处理下载还是收藏
+        Klass = UserFolderImage
+        if kw == '-download_nums':
+            Klass = DownloadShip
+
+        # 处理周或者月
+        now_time = datetime.datetime.now()
+        if time == 'week':
+            day_num = now_time.isoweekday()
+            monday = (now_time - datetime.timedelta(days=day_num))
+            time_range = (monday, now_time)
+        elif time == 'month':
+            month = now_time.month
+            if month == 12:
+                month = 0
+            last_day = datetime.datetime(now_time.year, month + 1, 1, 0, 0, 0)
+            first_day = datetime.datetime(now_time.year, now_time.month, 1, 0, 0, 0)
+            time_range = (first_day, last_day)
+        else:
+            return Response({"time": "参数错误"}, status=400)
+
+        # 查询排行情况
+        qs = Klass.objects.filter(add_time__range=time_range).values('image').annotate(
+            total_image=Count("image")).order_by("-total_image")
+
+        # 分页
+        page = request.GET.get('page')
+        page = 1 if not page else int(page)
+        return self.page_serializer(qs, page, request, Klass)
+
+    def list(self, request, *args, **kwargs):
+        if_active = request.GET.get('if_active')
+        user = request.GET.get('user')
+        # 获得用户上传图片,在草稿箱或等待上传或通过审核或没通过
+        if if_active:
+            if user and int(user) == request.user.id:
+                queryset = self.filter_queryset(self.get_queryset())
+            else:
+                return Response({"error": "没有权限"}, status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            queryset = ImageModel.objects.filter(if_active=1)
+            # 检索
+            search = request.GET.get('search')
+            if search:
+                queryset = queryset.filter(save_hot_word(search))
+            # 筛选分类
+            cates = request.GET.get('cates')
+            if cates:
+                queryset = filter_cate(cates, queryset)
+            # 排序加周榜和月榜
+            kw = request.GET.get('ordering')
+            time = request.GET.get('time')
+            if kw in ('-download_nums', '-collection_nums') and time:
+                return self.rank(kw, time, request)
             queryset = self.filter_queryset(queryset)
-        else:
-            queryset = self.filter_queryset(self.get_queryset())
 
-        if queryset.count():
-            page = self.paginate_queryset(queryset[::-1])
-        else:
-            page = self.paginate_queryset(queryset)
-
+        page = self.paginate_queryset(queryset)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
 

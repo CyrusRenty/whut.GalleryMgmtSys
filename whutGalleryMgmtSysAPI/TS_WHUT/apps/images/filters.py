@@ -9,7 +9,7 @@ class ImageFilter(django_filters.rest_framework.FilterSet):
     """
     class Meta:
         model = ImageModel
-        fields = ['pattern', 'user']
+        fields = ['pattern', 'user', 'if_active']
 
 
 class CommentFilter(django_filters.rest_framework.FilterSet):

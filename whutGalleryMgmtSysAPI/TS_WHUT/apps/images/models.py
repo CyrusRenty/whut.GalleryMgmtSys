@@ -34,12 +34,15 @@ class ImageModel(models.Model):
         (1, "已通过"),
         (2, "等待审核"),
         (3, "未通过"),
+        (4, "未上传"),
     )
 
     image = ThumbnailerImageField(upload_to="images/%Y/%m", storage=ImageStorage(), blank=True,
-                                  verbose_name="图片", max_length=100)
+                                  verbose_name="预览图", max_length=100)
+    file = models.FileField(upload_to="files/%Y/%m", storage=ImageStorage(), blank=True, verbose_name="文件")
+    ori_img = models.ImageField(upload_to="ori_img/%Y/%m", storage=ImageStorage(), blank=True, verbose_name="原图")
     add_time = models.DateField(default=datetime.now, verbose_name="添加时间")
-    if_active = models.IntegerField(choices=ACTIEVE_TYPE, default=2, verbose_name="处理情况")
+    if_active = models.IntegerField(choices=ACTIEVE_TYPE, default=4, verbose_name="处理情况")
     desc = models.CharField(max_length=200, verbose_name="描述", null=True, blank=True)
     user = models.ForeignKey(User, models.SET_NULL, null=True, verbose_name="上传人")
     pattern = models.CharField(max_length=10, verbose_name="格式", default="jpeg")
@@ -51,11 +54,11 @@ class ImageModel(models.Model):
 
     def url(self):
         from django.utils.safestring import mark_safe
-        html = "<a href='/admin/users/userprofile/" + str(self.user.id) + "/update/'>" + self.user.username + "</>"
+        html = "<a href='/admin/users/userprofile/" + str(self.user.id) + "/update/'>" + self.user.username + " </>"
         if self.user.if_sign:
-            html += "<i> 已签约</i>"
+            html += '<img src="/static/images/Sign_Yellow.png" width="20px" alt="已签约" />'
         if self.user.if_cer:
-            html += "<i> 已认证</i>"
+            html += '<img src="/static/images/Verify_Yellow.png" width="20px" alt="已认证" />'
         return mark_safe(html)
 
     url.short_description = "上传者"

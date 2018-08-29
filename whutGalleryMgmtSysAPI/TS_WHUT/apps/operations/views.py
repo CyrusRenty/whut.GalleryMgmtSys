@@ -12,6 +12,9 @@ from django.contrib.auth.hashers import make_password
 from django.http import HttpResponse, HttpResponseRedirect, StreamingHttpResponse
 from rest_framework.pagination import PageNumberPagination
 import json
+import zipfile
+import os
+from TS_WHUT.settings import MEDIA_ROOT
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle  # 限速
 
 from .serializer import (LikeSerializer, FollowSerializer, CollectSerializer, DownloadSerializer, CommentLikeSerialzer,
@@ -22,6 +25,7 @@ from .models import LikeShip, Follow, UserFolderImage, DownloadShip, CommentLike
 from users.models import EmailVerifyRecord, UserMessage, Org
 from images.models import ImageModel
 from my_utils.send_email import send_register_email
+from my_utils.read_file import readFile
 
 User = get_user_model()
 
@@ -140,16 +144,6 @@ class DownloadPagination(PageNumberPagination):
     max_page_size = 100
 
 
-def file_iterator(file_name, chunk_size=512):
-    with open(file_name, 'rb') as f:
-        while True:
-            c = f.read(chunk_size)
-            if c:
-                yield c
-            else:
-                break
-
-
 class DownloadViewset(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     """
     create:
@@ -176,7 +170,23 @@ class DownloadViewset(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.G
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         ship = self.perform_create(serializer)
-        return StreamingHttpResponse(file_iterator(ship.image.image.path))
+
+        # image = ship.image
+        # if image.file:
+        #     path = image.file.path
+        # elif image.ori_img:
+        #     path = image.ori_img.path
+        # else:
+        #     return Response({"error": "资源被删除"}, status=status.HTTP_404_NOT_FOUND)
+        # zip_path = MEDIA_ROOT + '/zip/' + '图说理工_' + image.name + image.pattern + str(image.id) + '.zip'
+        # if not os.path.isfile(zip_path):
+        #     with zipfile.ZipFile(zip_path, 'w') as azip:
+        #         azip.write(path, compress_type=zipfile.ZIP_LZMA)
+        #         azip.write(image.image.path, compress_type=zipfile.ZIP_LZMA)
+        #
+        # return StreamingHttpResponse(readFile(zip_path))
+
+        return StreamingHttpResponse(readFile(ship.image.image.path))
 
     def perform_create(self, serializer):
         return serializer.save()
