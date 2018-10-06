@@ -11,6 +11,7 @@ from django.core.mail import send_mail  # 引入发送邮件方法
 
 from users.models import EmailVerifyRecord  # 引入邮箱验证表单
 from TS_WHUT.settings import EMAIL_FROM  # 引入配置中的发送人
+from TS_WHUT.celery import app
 
 
 def random_str(randomlength=8):
@@ -28,6 +29,7 @@ def random_str(randomlength=8):
     return str
 
 
+@app.task
 def send_register_email(email, send_type="register"):
     """
     email: 目标邮箱

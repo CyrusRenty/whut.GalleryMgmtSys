@@ -20,7 +20,6 @@ from .serializer import (FolderCreateSerializer, FolderListSerializer, FolderOne
                          UserListSerializer, UserCreateSerializer, UserUpdateSerializer, OrgSerializer, OrgOneSerializer)
 from .models import Folder, UserMessage, Org
 from images.models import ImageModel
-from operations.models import Follow
 from my_utils.send_email import send_register_email
 from .filters import UsersFilter
 
@@ -36,7 +35,7 @@ class ResetEmail(View):
         user_message.user = request.user
         user_message.message = "图说理工网修改邮箱"
         user_message.save()
-        send_register_email(email, "update_email")
+        send_register_email.delay(email, "update_email")
         pass
 
 
@@ -171,20 +170,6 @@ class UserViewset(viewsets.ModelViewSet):
     ordering_fields = ('fan_nums',)
     authentication_classes = (JSONWebTokenAuthentication, authentication.SessionAuthentication)
 
-    def get_image(self, user, request):
-        """获取用户三张图片"""
-        data = []
-        i = 0
-        for image in ImageModel.objects.filter(user=user, if_active=1)[::-1]:
-            i += 1
-            if i > 3:
-                return data
-            data.append({
-                "url": image.image['avatar'].url,
-                "id": image.id,
-            })
-        return data
-
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
 
@@ -199,7 +184,7 @@ class UserViewset(viewsets.ModelViewSet):
     def get_queryset(self):
         if self.action == 'destroy':
             return User.objects.filter(id=self.request.user.id)
-        elif self.action == 'update':
+        elif self.action in ('update', 'partial_update'):
             return User.objects.filter(id=self.request.user.id)
         return User.objects.filter(is_active=True)
 
@@ -213,7 +198,7 @@ class UserViewset(viewsets.ModelViewSet):
             return UserListSerializer
         elif self.action == 'create':
             return UserCreateSerializer
-        elif self.action == 'update':
+        elif self.action in ('update', 'partial_update'):
             return UserUpdateSerializer
         return UserListSerializer
 
@@ -234,7 +219,7 @@ class UserViewset(viewsets.ModelViewSet):
         user_message.save()
 
         # 发送验证邮箱
-        send_register_email(user.email, "register")
+        send_register_email.delay(user.email, "register")
 
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
@@ -254,7 +239,7 @@ class UserViewset(viewsets.ModelViewSet):
             user_message.message = "图说理工网-验证个人信息修改"
             user_message.save()
             # 发送验证邮箱
-            send_register_email(user.email, "register")
+            send_register_email.delay(user.email, "register")
 
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
@@ -263,3 +248,25 @@ class UserViewset(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         return serializer.save()
+
+
+class UserImageNum(View):
+    def get_authenticate(self, request):
+        authenticator = JSONWebTokenAuthentication()
+        user = authenticator.authenticate(request)
+        if user:
+            return user[0]
+        return request.user
+
+    def get(self, request):
+        user = self.get_authenticate(request)
+        if not user.is_authenticated:
+            return Response({"error": "未登录"}, status=status.HTTP_403_FORBIDDEN)
+        images = ImageModel.objects.filter(user=user, if_show=True)
+        data = {
+            "已通过": images.filter(if_active=1).count(),
+            "等待审核": images.filter(if_active=2).count(),
+            "未通过": images.filter(if_active=3).count(),
+            "未上传": images.filter(if_active=4).count()
+        }
+        return HttpResponse(json.dumps(data))
