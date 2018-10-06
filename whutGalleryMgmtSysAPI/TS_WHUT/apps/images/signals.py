@@ -34,7 +34,7 @@ def do_something_if_changed(sender, instance, **kwargs):
                 cates = re.split('[/、]', obj.cates)
                 for cate in cates:
                     group = Groups.objects.filter(name=cate)
-                    if not group.count() or group.level == 2:
+                    if not group.count() or group[0].level == 2:
                         # 回退
                         obj.cates = instance.cates
                         break
@@ -73,9 +73,10 @@ def create_group_image(sender, instance=None, created=False, **kwargs):
                     cate_str = cate_str + '、' + tmp_str
                 else:
                     cate_str = cate_str + '、' + cate
-                    group = Groups(name=cate)
-                    group.save()
-                    GroupImage(image=instance, name=cate, group=group).save()
+                    # 没有该分类也不创建该分类
+                    # group = Groups(name=cate)
+                    # group.save()
+                    # GroupImage(image=instance, name=cate, group=group).save()
 
         instance.cates = cate_str[1:]
         instance.save()

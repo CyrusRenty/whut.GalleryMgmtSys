@@ -43,11 +43,13 @@ class ImageModel(models.Model):
     ori_img = models.ImageField(upload_to="ori_img/%Y/%m", storage=ImageStorage(), blank=True, verbose_name="原图")
     add_time = models.DateField(default=datetime.now, verbose_name="添加时间")
     if_active = models.IntegerField(choices=ACTIEVE_TYPE, default=4, verbose_name="处理情况")
+    if_show = models.BooleanField(default=True, verbose_name="显示记录")
     desc = models.CharField(max_length=200, verbose_name="描述", null=True, blank=True)
     user = models.ForeignKey(User, models.SET_NULL, null=True, verbose_name="上传人")
     pattern = models.CharField(max_length=10, verbose_name="格式", default="jpeg")
     like_nums = models.IntegerField(default=0, verbose_name="点赞数")
     cates = models.CharField(max_length=200, verbose_name="层级划分", default="")
+    keywords = models.CharField(max_length=500, verbose_name="关键词", default="")
     collection_nums = models.IntegerField(default=0, verbose_name="收藏数")
     download_nums = models.IntegerField(default=0, verbose_name="下载量")
     name = models.CharField(max_length=20, verbose_name="图片名", default="")
@@ -64,7 +66,7 @@ class ImageModel(models.Model):
     url.short_description = "上传者"
 
     def i_desc(self):
-        if len(self.desc) > 5:
+        if self.desc and len(self.desc) > 5:
             return self.desc[:5] + '...'
         return self.desc
 

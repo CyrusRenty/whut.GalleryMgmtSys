@@ -12,14 +12,15 @@ from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 # from rest_framework_extensions.cache.mixins import CacheResponseMixin  # 缓存
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle  # 限速
 import jieba
+# from gensim import corpora, models, similarities
 import datetime
 from django.db.models import Count
 
 from .models import ImageModel, BannerModel, Comment, SearchWord, Groups, GroupImage
-from operations.models import DownloadShip, UserFolderImage, LikeShip, Follow
+from operations.models import DownloadShip, UserFolderImage
 from .serializer import (ImageSerializer, ImageCreateSerializer, BannerSerializer, CommentListSerializer,
                          CommentCreateSerializer, BannerOneSerializer, SearchWordSerializer, GroupListSerializer,
-                         ImageUpdateSerializer)
+                         ImageUpdateSerializer, get_if_follow, get_if_like, get_if_collect)
 from .filters import ImageFilter, CommentFilter
 
 
@@ -58,7 +59,9 @@ def check_cates(instance):
     return instance, q2
 
 
-class GroupsViewset(mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+class GroupsViewset(mixins.RetrieveModelMixin,
+                    mixins.ListModelMixin,
+                    viewsets.GenericViewSet):
     """
     list:
         全部大类加上大类中全部小类图片
@@ -175,7 +178,7 @@ def save_hot_word(search_word):
     else:
         SearchWord(word=search_word).save()
 
-    rows = ('cates', 'name', 'desc', 'user__username')
+    rows = ('cates', 'name', 'desc', 'user__username', 'keywords')
     q = Q()
     q.connector = 'OR'
     for row in rows:
@@ -185,47 +188,15 @@ def save_hot_word(search_word):
     return q
 
 
-def get_upload_nums(user):
-    return ImageModel.objects.filter(user=user, if_active=1).count()
-
-
-def get_if_like(request, image):
-    if not request.user.is_authenticated:
-        return False
-    ship = LikeShip.objects.filter(user_id=request.user.id, image_id=image.id)
-    if ship.count():
-        return ship[0].id
-    return False
-
-
 def get_user_data(image):
     user = image.user
     return {
         "image": user.image.url,
         "id": user.id,
         "username": user.username,
-        "upload_nums": get_upload_nums(user),
+        "upload_nums": ImageModel.objects.filter(user=user, if_active=1).count(),
         "fan_nums": user.fan_nums
     }
-
-
-def get_if_follow(request, image):
-    # 是否关注上传者
-    if not request.user.is_authenticated:
-        return False
-    ship = Follow.objects.filter(fan_id=request.user.id, follow_id=image.user.id)
-    if ship.count():
-        return ship[0].id
-    return False
-
-
-def get_if_collect(request, image):
-    if not request.user.is_authenticated:
-        return False
-    ship = UserFolderImage.objects.filter(user_id=request.user.id, image_id=image.id)
-    if ship.count():
-        return ship[0].id
-    return False
 
 
 class ImageViewset(viewsets.ModelViewSet):
@@ -240,6 +211,8 @@ class ImageViewset(viewsets.ModelViewSet):
         删除一张图片
     update:
         修改一张图片
+    partial_update:
+        修改一张图片
     """
     throttle_classes = (UserRateThrottle, AnonRateThrottle)
     serializer_class = ImageSerializer
@@ -250,24 +223,22 @@ class ImageViewset(viewsets.ModelViewSet):
     authentication_classes = (JSONWebTokenAuthentication, authentication.SessionAuthentication)
 
     def get_permissions(self):
-        if self.action in ('create', 'destroy', 'update'):
+        if self.action in ('create', 'destroy', 'update', 'partial_update'):
             return [permissions.IsAuthenticated()]
         return []
 
     def get_queryset(self):
         # 删除只能是上传者
-        if self.action == 'destroy':
+        if self.action in ('destroy', 'update', 'partial_update'):
             return ImageModel.objects.filter(user=self.request.user)
-        if self.action == 'update':
-            return ImageModel.objects.filter(user=self.request.user, if_active=4)
-        return ImageModel.objects.filter(if_active=1)
+        return ImageModel.objects.all()
 
     def get_serializer_class(self):
         if self.action == 'list':
             return ImageSerializer
         elif self.action == 'create':
             return ImageCreateSerializer
-        elif self.action == 'update':
+        elif self.action in ('update', 'partial_update'):
             return ImageUpdateSerializer
         return ImageSerializer
 
@@ -289,25 +260,12 @@ class ImageViewset(viewsets.ModelViewSet):
             'view': self
         }
 
-    def page_serializer(self, qs, page, request, Klass):
-        """
-        分页和序列化, 不能直接用id筛选再序列化, 因为有一个图片顺序, 所以只有自己序列化了
-        """
-        sum_qs = qs.count()
-        if (page - 1) * 8 > sum_qs:
-            return Response([])
-        if page * 8 < sum_qs:
-            qs = qs[(page - 1) * 8:page * 8]
-            next_page = page + 1
-        else:
-            qs = qs[(page - 1) * 8:]
-            next_page = None
-
+    def serializer_res(self, qs, kw, sum_qs, next_page, request):
         # 序列化
         results = []
         for q in qs:
             image = ImageModel.objects.get(id=q['image'])
-            if isinstance(Klass, DownloadShip):
+            if kw == '-download_nums':
                 download_nums = q['total_image']
                 collection_nums = image.collection_nums
             else:
@@ -332,6 +290,31 @@ class ImageViewset(viewsets.ModelViewSet):
             "next": next_page,
             "results": results
         })
+
+    def get_pages(self, qs, request, kw):
+        """
+        分页和序列化, 不能直接用id筛选再序列化, 因为有一个图片顺序, 所以只有自己序列化了
+        """
+        # 分页
+        page = request.GET.get('page')
+        page = 1 if not page else int(page)
+        num = 8
+
+        if request.GET.get('num'):
+            num = int(request.GET.get('num'))
+        sum_qs = qs.count()
+
+        if (page - 1) * num > sum_qs:
+            return Response([])
+
+        if page * num < sum_qs:
+            qs = qs[(page - 1) * num:page * num]
+            next_page = page + 1
+        else:
+            qs = qs[(page - 1) * num:]
+            next_page = None
+
+        return self.serializer_res(qs, kw, sum_qs, next_page, request)
 
     def rank(self, kw, time, request):
         """周,月排行榜"""
@@ -360,10 +343,7 @@ class ImageViewset(viewsets.ModelViewSet):
         qs = Klass.objects.filter(add_time__range=time_range).values('image').annotate(
             total_image=Count("image")).order_by("-total_image")
 
-        # 分页
-        page = request.GET.get('page')
-        page = 1 if not page else int(page)
-        return self.page_serializer(qs, page, request, Klass)
+        return self.get_pages(qs, request, kw)
 
     def list(self, request, *args, **kwargs):
         if_active = request.GET.get('if_active')
@@ -371,7 +351,7 @@ class ImageViewset(viewsets.ModelViewSet):
         # 获得用户上传图片,在草稿箱或等待上传或通过审核或没通过
         if if_active:
             if user and int(user) == request.user.id:
-                queryset = self.filter_queryset(self.get_queryset())
+                queryset = self.filter_queryset(self.get_queryset().filter(if_show=True))
             else:
                 return Response({"error": "没有权限"}, status=status.HTTP_401_UNAUTHORIZED)
         else:
@@ -406,7 +386,9 @@ class SearchWordViewset(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = SearchWordSerializer
 
 
-class BannerViewset(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+class BannerViewset(mixins.ListModelMixin,
+                    mixins.RetrieveModelMixin,
+                    viewsets.GenericViewSet):
     throttle_classes = (UserRateThrottle, AnonRateThrottle)
     queryset = BannerModel.objects.filter(if_show=True)
     serializer_class = BannerSerializer
@@ -426,7 +408,9 @@ class CommentPagination(PageNumberPagination):
     page_query_param = "page"
 
 
-class CommentViewset(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
+class CommentViewset(mixins.ListModelMixin,
+                     mixins.CreateModelMixin,
+                     viewsets.GenericViewSet):
     """
     list:
         列出单张图片的全部评论
@@ -452,15 +436,22 @@ class CommentViewset(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.Ge
         return CommentCreateSerializer
 
     def get_reply(self, image, start, end):
-        queryset = Comment.objects.filter(is_add_info=True, image_id=image, floor__gte=start, floor__lte=end).order_by("floor")
-        return self.get_serializer(queryset, many=True).data
+        return self.get_serializer(Comment.objects.filter(
+                                    is_add_info=True,
+                                    image_id=image,
+                                    floor__gte=start,
+                                    floor__lte=end).order_by("floor"), many=True
+                                   ).data
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         obj = self.perform_create(serializer)
         data = serializer.data
-        data['user'] = {'id': obj.user.id, 'username': obj.user.username, 'image': obj.user.image.url}
+        # 添加用户信息
+        data['user'] = {'id': obj.user.id,
+                        'username': obj.user.username,
+                        'image': obj.user.image.url}
         headers = self.get_success_headers(serializer.data)
         return Response(data, status=status.HTTP_201_CREATED, headers=headers)
 
@@ -471,7 +462,7 @@ class CommentViewset(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.Ge
         queryset = self.filter_queryset(self.get_queryset())
 
         page = self.paginate_queryset(queryset)
-        if page is not None:
+        if page:
             serializer = self.get_serializer(page, many=True)
             # 因为是倒序排的
             start = serializer.data[-1]['floor']
@@ -492,3 +483,54 @@ class CommentViewset(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.Ge
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+
+# def recomment_images(request, image):
+#     """
+#     推荐符合描述的前五张图片
+#     """
+#     doc_test_list = [word for word in jieba.cut(image.desc)]
+#
+#     images = ImageModel.objects.filter(if_active=1)
+#     all_doc_list = []
+#     image_ids = {}
+#     for i, image in enumerate(images):
+#         image_ids[i] = image
+#         doc_list = [word for word in jieba.cut(image.desc)]
+#         all_doc_list.append(doc_list)
+#
+#     dictionary = corpora.Dictionary(all_doc_list)
+#     corpus = [dictionary.doc2bow(doc) for doc in all_doc_list]
+#     doc_test_vec = dictionary.doc2bow(doc_test_list)
+#     tfidf = models.TfidfModel(corpus)
+#     index = similarities.SparseMatrixSimilarity(tfidf[corpus], num_features=len(dictionary.keys()))
+#     sim = index[tfidf[doc_test_vec]]
+#     nums = sorted(enumerate(sim), key=lambda item: -item[1])[1:6]
+#     data = []
+#     for num in nums:
+#         image = image_ids[num[0]]
+#         data.append({
+#             'id': image.id,
+#             "image": image.image['avatar'].url,
+#             "name": image.name,
+#             "cates": image.cates,
+#             "download_nums": image.download_nums,
+#             "like_nums": image.like_nums,
+#             "collection_nums": image.collection_nums,
+#             "add_time": image.add_time,
+#             "if_like": get_if_like(request, image),
+#             "if_collect": get_if_collect(request, image),
+#             "if_follow": get_if_follow(request, image)
+#         })
+#     return data
+
+
+# class Recomment(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+#     throttle_classes = (UserRateThrottle, AnonRateThrottle)
+#     queryset = ImageModel.objects.filter(if_active=1)
+#
+#     def retrieve(self, request, *args, **kwargs):
+#         instance = self.get_object()
+#         return Response({
+#             "recomment": recomment_images(request, instance)
+#         })

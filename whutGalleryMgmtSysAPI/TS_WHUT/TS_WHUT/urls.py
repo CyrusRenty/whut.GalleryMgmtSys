@@ -14,7 +14,7 @@ from rest_framework_jwt.views import obtain_jwt_token
 from rest_framework.routers import DefaultRouter
 
 from images.views import ImageViewset, BannerViewset, CommentViewset, SearchWordViewset, GroupsViewset
-from users.views import FolderViewset, UserViewset, HasUser, OrgViewset
+from users.views import FolderViewset, UserViewset, HasUser, OrgViewset, UserImageNum
 from operations.views import (LikeViewset, DownloadViewset, FollowViewset, ActiveUserView, ResetPwdView,
                               CollectViewset, FollowUserViewset, FanUserViewset, ForgetView, UserImageView, OrgImage,
                               ChangePasswordView, CommentLikeViewset, ApplicationViewset, CheckView, ReportViewset)
@@ -89,6 +89,8 @@ urlpatterns = [
     path('has_user/', HasUser.as_view(), name="has_user"),
     # 富文本
     re_path(r'ueditor/', include('DjangoUeditor.urls')),
+    # 获取用户不同状态图片数量
+    path('image_num/', UserImageNum.as_view(), name="user_image_num")
 ]
 
 if settings.DEBUG:

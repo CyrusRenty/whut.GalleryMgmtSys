@@ -44,7 +44,7 @@ def recommend_image(desc):
     :param desc: 图片描述
     :return: queryset
     """
-    rows = ('cates', 'name', 'desc', 'user__username')
+    rows = ('cates', 'name', 'desc', 'user__username', 'keywords')
     q = Q()
     q.connector = 'OR'
     for row in rows:
@@ -55,9 +55,50 @@ def recommend_image(desc):
 
 
 class ImageUpdateSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        if self.instance.if_active == 4:
+            if_active = attrs.get('if_active')
+            if if_active:
+                if if_active != 2:
+                    raise serializers.ValidationError('参数错误')
+            return attrs
+        if attrs.get('desc') or attrs.get('cates') or attrs.get('name') or attrs.get('image'):
+            raise serializers.ValidationError('参数错误')
+        return attrs
+
     class Meta:
         model = ImageModel
-        fields = ('desc', 'cates', 'name', 'image')
+        fields = ('desc', 'cates', 'name', 'image', 'if_show', 'keywords', 'if_active')
+
+
+def get_if_like(request, image):
+    """是否点赞"""
+    if not request.user.is_authenticated:
+        return False
+    ship = LikeShip.objects.filter(user_id=request.user.id, image_id=image.id)
+    if ship.count():
+        return ship[0].id
+    return False
+
+
+def get_if_follow(request, image):
+    """是否关注上传者"""
+    if not request.user.is_authenticated:
+        return False
+    ship = Follow.objects.filter(fan_id=request.user.id, follow_id=image.user.id)
+    if ship.count():
+        return ship[0].id
+    return False
+
+
+def get_if_collect(request, image):
+    """是否收藏"""
+    if not request.user.is_authenticated:
+        return False
+    ship = UserFolderImage.objects.filter(user_id=request.user.id, image_id=image.id)
+    if ship.count():
+        return ship[0].id
+    return False
 
 
 class ImageSerializer(serializers.ModelSerializer):
@@ -70,9 +111,18 @@ class ImageSerializer(serializers.ModelSerializer):
     width = serializers.SerializerMethodField()
     size = serializers.SerializerMethodField()
     recommend = serializers.SerializerMethodField()
+    cates = serializers.SerializerMethodField()
+
+    def get_cates(self, obj):
+        if not self.context.get('water_image'):
+            return obj.cates
+        return obj.cates.split('、')[0].split('/')
 
     def get_size(self, obj):
         # 图片大小
+        # if obj.ori_img:
+        #     return obj.ori_img.size
+        # return obj.file.size
         return obj.image.size
 
     def get_recommend(self, obj):
@@ -85,7 +135,16 @@ class ImageSerializer(serializers.ModelSerializer):
         for image in images[:5]:
             data.append({
                 'id': image.id,
-                "image": image.image['avatar'].url
+                "image": image.image['avatar'].url,
+                "name": image.name,
+                "cates": image.cates,
+                "download_nums": image.download_nums,
+                "like_nums": image.like_nums,
+                "collection_nums": image.collection_nums,
+                "add_time": image.add_time,
+                "if_like": self.get_if_like(image),
+                "if_collect": self.get_if_collect(image),
+                "if_follow": self.get_if_follow(image)
             })
         return data
 
@@ -97,37 +156,28 @@ class ImageSerializer(serializers.ModelSerializer):
 
     def get_if_like(self, obj):
         # 是否点赞图片
-        if not self.context['request'].user.is_authenticated:
-            return False
-        ship = LikeShip.objects.filter(user_id=self.context['request'].user.id, image_id=obj.id)
-        if ship.count():
-            return ship[0].id
-        return False
+        return get_if_like(self.context['request'], obj)
 
     def get_if_collect(self, obj):
         # 是否收藏图片
-        if not self.context['request'].user.is_authenticated:
-            return False
-        ship = UserFolderImage.objects.filter(user_id=self.context['request'].user.id, image_id=obj.id)
-        if ship.count():
-            return ship[0].id
-        return False
+        return get_if_collect(self.context['request'], obj)
 
     def get_if_follow(self, obj):
         # 是否关注上传者
-        if not self.context['request'].user.is_authenticated:
-            return False
-        ship = Follow.objects.filter(fan_id=self.context['request'].user.id, follow_id=obj.user.id)
-        if ship.count():
-            return ship[0].id
-        return False
+        return get_if_follow(self.context['request'], obj)
 
     def get_height(self, obj):
         # 图片高
+        # if obj.ori_img:
+        #     return obj.ori_img.height
+        # return None
         return obj.image.height
 
     def get_width(self, obj):
         # 图片宽
+        # if obj.ori_img:
+        #     return obj.ori_img.width
+        # return None
         return obj.image.width
 
     class Meta:
@@ -137,10 +187,14 @@ class ImageSerializer(serializers.ModelSerializer):
 
 class ImageCreateSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(required=True)
-    cates = serializers.CharField(required=True)
+    # cates = serializers.CharField(required=True)
     name = serializers.CharField(required=True)
 
     def validate(self, attrs):
+        if_active = attrs.get('if_active')
+        if if_active:
+            if if_active != 2 and if_active != 4:
+                raise serializers.ValidationError("参数错误")
         if attrs['image'].size > 10485760:
             raise serializers.ValidationError("预览图过大")
         attrs['user'] = self.context['request'].user
@@ -148,7 +202,7 @@ class ImageCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ImageModel
-        fields = ('desc', 'cates', 'name', 'image', 'file', 'ori_img')
+        fields = ('desc', 'cates', 'name', 'image', 'file', 'ori_img', 'keywords', 'if_active')
 
 
 class CommentListSerializer(serializers.ModelSerializer):

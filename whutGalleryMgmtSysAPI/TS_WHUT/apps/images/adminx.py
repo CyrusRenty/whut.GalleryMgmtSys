@@ -22,6 +22,7 @@ class GroupsAdmin(object):
     search_fields = ('name',)
     list_filter = ('name', 'add_time', 'if_show', 'level')
     model_icon = 'fa fa-object-group'
+    list_editable = ('name', 'if_show')
     form_layout = (
         Main(
             Fieldset('',
@@ -42,6 +43,7 @@ class BannerModelAdmin(object):
     search_fields = ('title',)
     list_filter = ('title', 'if_show', 'add_time')
     model_icon = 'fa fa-picture-o'
+    list_editable = ('if_show',)
     form_layout = (
         Main(
             Fieldset('',
@@ -62,7 +64,7 @@ class ImageModelAdmin(object):
     list_display = ('name', 'url', 'if_active', 'cates', 'pattern', 'i_desc', 'add_time')
     search_fields = ('name', 'desc', 'pattern')
     list_filter = ('user', 'name', 'if_active', 'desc', 'pattern', 'cates', 'add_time')
-    readonly_fields = ('user', 'add_time')
+    readonly_fields = ('add_time',)
     model_icon = 'fa fa-file-image-o'
     refresh_times = (5, 10)
     relfield_style = 'fk-ajax'
@@ -83,7 +85,7 @@ class ImageModelAdmin(object):
 
     def get_readonly_fields(self):
         if self.user.is_superuser:
-            self.readonly_fields = ['user']
+            self.readonly_fields = []
         return self.readonly_fields
 
 

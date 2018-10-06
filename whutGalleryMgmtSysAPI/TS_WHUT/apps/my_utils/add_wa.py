@@ -4,7 +4,7 @@
 from PIL import Image
 from TS_WHUT.settings import MEDIA_ROOT
 
-wa_path = MEDIA_ROOT + '/images/wa.png'
+wa_path = MEDIA_ROOT + '/wa/wa.png'
 root_path = MEDIA_ROOT + '/main/'
 
 
