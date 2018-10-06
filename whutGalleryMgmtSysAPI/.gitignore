@@ -9,3 +9,11 @@ migrations
 .git
 settings.py
 media
+*.js
+*.css
+*.map
+*.eot
+*.svg
+*.ttf
+*.woff
+*.exe
