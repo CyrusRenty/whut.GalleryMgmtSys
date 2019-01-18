@@ -1,51 +1,43 @@
 import {getFollowRankList,getSignedList} from "../../api/get";
-import user from "./user";
+
 
 const person_card={
   state:{
-    baseurl:'http://10.138.207.222:8000',
-    rank_list:{},
-    sign_list:{},
-    show_rank:true,
-    rank_next_page:'',
-    sign_next_page:''
+    rank_list:[],
+    sign_list:[],
+    rank_counts:0,
+    sign_counts:0
   },
   mutations:{
     SET_RANK_LIST:(state,data)=>{
-      state.rank_list=data
+      state.rank_list=data.results
+      state.rank_counts=data.count
+    },
+    SET_RANK_LIST_EMPTY:(state)=>{
+      state.rank_list=[]
     },
     SET_SIGN_LIST:(state,data)=>{
-      state.sign_list=data
+      state.sign_list=data.results
+      state.sign_counts=data.count
     },
-    SET_NEXT_RANK_PAGE:(state,data)=>{
-      state.rank_next_page=data
+    SET_SIGN_LIST_EMPTY:(state)=>{
+      state.sign_list=[]
     },
-    SET_NEXT_SIGN_PAGE:(state,data)=>{
-      state.sign_next_page=data
-    }
   },
   actions:{
-    GetRankList({commit}){
+    GetRankList({commit},params){
       return new Promise((resolve,reject)=>{
-         getFollowRankList().then((res)=>{
-           if(res.data.next===null){
-             commit('SET_NEXT_RANK_PAGE',null)
-           }
-           else commit('SET_NEXT_RANK_PAGE',res.data.next.split("?")[1])
-          commit('SET_RANK_LIST',res.data.results)
+         getFollowRankList(params).then((res)=>{
+          commit('SET_RANK_LIST',res.data)
         }).catch((error)=>{
           reject(error)
         })
       })
     },
-    GetSignList({commit}){
+    GetSignList({commit},params){
       return new Promise((resolve,reject)=>{
-         getSignedList().then(res=>{
-           if(res.data.next===null){
-             commit('SET_NEXT_SIGN_PAGE',null)
-           }
-           else commit('SET_NEXT_SIGN_PAGE',res.data.next.split("?")[1])
-          commit('SET_SIGN_LIST',res.data.results)
+         getSignedList(params).then(res=>{
+          commit('SET_SIGN_LIST',res.data)
         }).catch((error)=>{
           reject(error)
         })

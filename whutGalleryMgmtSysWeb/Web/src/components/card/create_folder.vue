@@ -1,114 +1,103 @@
 <template>
-  <div class="add-collect" v-if="show_add">
+  <div class="add-collect" v-if="show_add" :class="{bg:$router.currentRoute.name==='person_collection'}">
     <div class="content-warp">
       <div class="content">
         <div class="head"><span class="head-title">新建收藏夹</span><span class="head-delete" @click="cancel">×</span></div>
         <div class="input-wrap">
-          <input type="text" v-model="folder_name" placeholder="收藏夹名(3-10字)" class="input-name" ref="folder_name" @input="checkFolderName" @blur="checkFolderExist"/>
+          <input type="text" v-focus v-model="folder_name" maxlength="10" placeholder="收藏夹名称(不超过10个字)" class="input-name" ref="folder_name"/>
           <div class="hint">{{hint_folder_name}}</div>
         </div>
         <div class="add-bottom">
-          <div class="confirm" @click="confirm">确定</div><div class="cancel" @click="cancel">返回</div>
+          <div class="confirm" @click="confirm">确定</div>
+          <div class="cancel" @click="cancel">返回</div>
           <div class="hint">{{hint_result}}</div>
         </div>
       </div>
     </div>
+    <hint :title="hint_title" :duration="1000" ref="hint"/>
   </div>
 </template>
 
 <script>
     import {newFolder} from "../../api/user";
-
+    import hint from '../../components/hint'
     export default {
         name: "create_folder",
+      components:{
+        hint
+      },
       data(){
           return {
             folder_name:'',
-            folder_desc:'',
             hint_result:'',
             hint_folder_name:'',
+            hint_title:'',
             show_add:false,
           }
       },
       created(){
-          if(!this.$store.state.user.collect_list){
-            this.$store.dispatch('SetCollection')
-            if(this.$router.currentRoute.name==='person_collection')
-              document.body.style.overflow='hidden'
-          }
-      },
-      mounted(){
-          this.$nextTick(()=>{
-            // this.$refs['folder_name'].focus()
-          })
+        this.$store.dispatch('SetFolderList')
       },
       methods:{
-          changeShow(){
-            this.show_add=!this.show_add
-          },
-          cancel(){
-            this.changeShow()
-            this.folder_name=''
-            this.folder_desc=''
-            if(this.$router.currentRoute.name==='person_collection')
-            document.body.style.overflow='auto'
-          },
-        clean_hint(){
-          this.hint_result=''
+        changeShow(){
+          this.show_add=!this.show_add
+          document.documentElement.style.overflow='hidden'
+        },
+        cancel(){
+          this.changeShow()
           this.folder_name=''
-          this.folder_desc=''
+          if(this.$router.currentRoute.name==='person_collection')
+          document.documentElement.style.overflow='auto'
         },
         confirm(){
-            if(!this.folder_name){
-              this.hint_folder_name='请填写收藏夹名'
-              this.$refs.folder_name.style.border='0.0625rem #ff0000 solid'
-            }
-            else{
+            if(this.folder_name.length<3){
+              this.$refs.hint.showHint('收藏夹名称3-10个字');
+            }else if(this.checkFolderExist()){
+              return
+            }else{
               let data =new FormData
-              data.append('name',this.folder_name)
-              data.append('desc',this.folder_desc)
+              data.append('name',this.folder_name);
               newFolder(data).then((res)=>{
                 if(res.data.id){
-                  this.hint_result='添加成功'
+                  this.$refs.hint.showHint('添加成功');
+                  if(this.$router.currentRoute.name==='person_collection')
                   this.$store.dispatch('SetCollection')
+                  this.$emit('reload')
+                  this.changeShow()
                 }
-                else this.hint_result='添加失败'
-                setTimeout(this.clean_hint,1800)
-                if(this.$router.currentRoute.name!=='person_collection')
-                this.$store.commit('SET_COLLECT_LIST',this.$store.state.imageGroup.image_id)
+                else this.$refs.hint.showHint('添加失败');
               }).catch(()=>{
-                this.hint_result='添加失败'
-                setTimeout(this.clean_hint,1800)
+                this.$refs.hint.showHint('添加失败');
                 })
             }
         },
-        checkFolderName(){
-            if(this.folder_name.length>10){
-              this.hint_folder_name='收藏夹名称过长'
-              this.$refs.folder_name.style.border='#ff0000 0.0625rem solid'
-            }else{
-              this.hint_folder_name=''
-              this.$refs.folder_name.style.border='#9ad3e2 0.0625rem solid'
-            }
-        },
         checkFolderExist(){
-          let exist=this.$store.state.user.collect_list.find((item)=>{
+          let exist=this.$store.state.user.folder_list.find((item)=>{
             if(item.name===this.folder_name)
               return true
-          })
+          });
           if(exist){
-            this.hint_folder_name='该收藏夹已存在'
-            this.$refs.folder_name.style.border='#ff0000 0.0625rem solid'
-          }else{
-            this.hint_folder_name=''
-            this.$refs.folder_name.style.border='#cecece 0.0625rem solid'
+            this.$refs.hint.showHint('该收藏夹已存在');
+            return true
+          }else return false
+
+        }
+      },
+      directives:{
+        focus:{
+          inserted:function (el) {
+            el.focus()
           }
         }
       }
     }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+  @import "../../styles/variables";
+  .bg{
+    background: rgba(0,0,0,0.6);
+  }
   .add-collect{
     position: fixed;
     top: 0;
@@ -116,7 +105,6 @@
     z-index: 102;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.6);
   }
   .content-warp{
     display: flex;
@@ -161,16 +149,6 @@
     font-size: 1.1rem;
     width: 100%;
   }
-  .folder-desc{
-    width: 100%;
-    height: 6rem;
-    resize: none;
-    text-indent: 0.625rem;
-    border: 1px solid #e3e3e3;
-    outline: none;
-    font-size: 1.1rem;
-    padding-top: 0.3rem;
-  }
   .add-bottom{
     position: absolute;
     bottom: 2.5rem;
@@ -190,10 +168,10 @@
     margin:0 0.5rem;
   }
   .confirm{
-    background: #9AD3E2;
-    color: #fff;
+    background: $normal;
+    color: #4a4a4a;
   }
   .confirm:hover{
-    background:#2cbec6;
+    background: $hover;
   }
 </style>

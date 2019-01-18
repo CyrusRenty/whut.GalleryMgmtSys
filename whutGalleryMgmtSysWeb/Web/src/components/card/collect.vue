@@ -7,14 +7,14 @@
            <ul class="collect-list">
              <li v-for="(item,index) in collect_list" class="list-item" :class="{collected:item.if_collect}">
                <div class="list-left"><span class="item-name">{{item.name}}</span><span class="item-num">{{item.nums}}个作品</span></div>
-               <div class="list-right"><img :src="item.if_collect?delete_image:add_image" @click="action(item.if_collect,index,item.id)"></div>
+               <div class="list-right"><img :src="item.if_collect?delete_image:add_image" @click="action(item.if_collect,item)"></div>
              </li>
            </ul>
          </div>
          <div class="content-bottom"><div class="add-new" @click="showAdd">新建收藏夹</div></div>
        </div>
      </div>
-      <create_folder_card ref="show_create_folder"/>
+      <create_folder_card ref="show_create_folder" @reload="reload"/>
     </div>
 </template>
 
@@ -22,9 +22,11 @@
   import {addImage,deleteImage} from "../../api/user";
   import create_folder_card from '../../components/card/create_folder'
   import cookie from "../../utils/cookie";
+  import {getCollectList} from "../../api/get";
 
   export default {
         name: "collect",
+    props:[''],
     components:{
       create_folder_card
     },
@@ -33,59 +35,60 @@
             show_add:false,
             add_image:require('../../assets/plus-circle.svg'),
             delete_image:require('../../assets/delete_image.png'),
+            show_collect:false,
+            collect_list:[],
+            image_id:-1,
+            image_item:{}
           }
       },
     computed:{
-      collect_list(){
-        return this.$store.state.user.collect_list
-      },
-      image_id(){
-        return this.$store.state.imageGroup.image_id
-      },
-      show_collect(){
-        return this.$store.state.user.show_collect
-      }
+
     },
-      methods:{
+    created(){
+
+    },
+    methods:{
+        showCollect(item){
+          document.documentElement.style.overflow='hidden'
+          this.show_collect=!this.show_collect
+          this.image_item=item
+          this.image_id=item.id
+          getCollectList(item.id).then((res)=>{
+            this.collect_list=res.data
+          }).catch((error)=>{
+            console.log(error)
+          })
+        },
         showAdd(){
           this.$refs.show_create_folder.changeShow()
         },
         closeCollect(){
-          this.$store.commit('SET_COLLECT_SHOW')
-          document.body.style.overflow = 'auto';
+          document.documentElement.style.overflow = 'auto';
+          this.show_collect=!this.show_collect
+
         },
         //添加/删除图片 刷新收藏夹
-        action(status,index,collect_id){
+        action(status,item){
           let data=new FormData();
           data.append('image',this.image_id);
-          data.append('folder',collect_id);
+          data.append('folder',item.id);
           data.append('user',cookie.getCookie('user_id'))
           if(status){
-            deleteImage(this.collect_list[index].if_collect).then(()=>{
-              //this.$store.commit('SET_COLLECT_LIST',this.image_id)
-              this.collect_list[index].if_collect=false
-              if(this.$router.currentRoute.name!=='image') {
-                this.$store.state.imageGroup.collect_item.collection_nums--
-                if(!this.checkCollect())
-                this.$store.state.imageGroup.collect_item.if_collect=false
-              }else{
-                this.$store.state.imageGroup.imageInfo.collection_nums--
-                this.$store.state.imageGroup.imageInfo.if_collect = false
-              }
+            deleteImage(item.if_collect).then(()=>{
+              item.if_collect=false
+              item.nums--
+              this.image_item.collection_nums--
+              if(!this.checkCollect())
+                this.image_item.if_collect=false
             }).catch((error)=>{
               console.log(error)
             })
           }else{
             addImage(data).then((res)=>{
-              this.collect_list[index].if_collect=res.data.id
-              //this.$store.commit('SET_COLLECT_LIST',this.image_id)
-              if(this.$router.currentRoute.name!=='image'){
-                this.$store.state.imageGroup.collect_item.collection_nums++
-                this.$store.state.imageGroup.collect_item.if_collect=res.data.id
-              }else{
-                this.$store.state.imageGroup.imageInfo.collection_nums++
-                this.$store.state.imageGroup.imageInfo.if_collect=res.data.id
-              }
+             item.if_collect=res.data.id
+              item.nums++
+              this.image_item.if_collect=res.data.id
+              this.image_item.collection_nums++
             }).catch((error)=>{
               console.log(error)
             })
@@ -97,7 +100,14 @@
               return true
           }
           return false
-        }
+        },
+      reload(){
+        getCollectList(this.image_id).then((res)=>{
+          this.collect_list=res.data
+        }).catch((error)=>{
+          console.log(error)
+        })
+      }
       },
     }
 </script>

@@ -12,18 +12,18 @@ module.exports = {
     assetsPublicPath: '/',
     proxyTable: {
       '/api':{
-        target:'http://111.231.230.54',//'http://192.168.1.102:8000'
+        target:'http://118.24.92.19/',
         changeOrigin:true,
         pathRewrite: {
-          '^/api': '/'         //这里理解成用‘/api’代替target里面的地址，后面组件中我们掉接口时直接用api代替 比如我要调用'http://10.1.5.11:8080/xxx/duty?time=2017-07-07 14:57:22'，直接写‘/api/xxx/duty?time=2017-07-07 14:57:22’即可
+          '^/api': ''         //这里理解成用‘/api’代替target里面的地址，后面组件中我们掉接口时直接用api代替 比如我要调用'http://10.1.5.11:8080/xxx/duty?time=2017-07-07 14:57:22'，直接写‘/api/xxx/duty?time=2017-07-07 14:57:22’即可
         }
       }
     },
 
     // Various Dev Server settings
-    host: 'localhost',//'10.138.230.55''192.168.1.103' // can be overwritten by process.env.HOST
-    port: 8000, // can be overwritten by process.env.PORT, if port is in use, a free one will be determined
-    autoOpenBrowser: false,
+    host: 'localhost', // can be overwritten by process.env.HOST
+    port: 8000 , // can be overwritten by process.env.PORT, if port is in use, a free one will be determined
+    autoOpenBrowser: true,
     errorOverlay: true,
     notifyOnErrors: true,
     poll: false, // https://webpack.js.org/configuration/dev-server/#devserver-watchoptions-

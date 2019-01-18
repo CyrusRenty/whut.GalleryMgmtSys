@@ -1,10 +1,11 @@
 <template>
-    <div id="main-image" v-if="nav_items.length">
+    <div id="main-image">
       <div v-for="(item,index) in nav_items" class="main-item-box" >
         <div class="title-wrap">
            <a @click="goBCates(item.name,index)">{{item.name}}</a><a v-for="(item_title,title_index) in item.kids" @click="goSCates(item_title.name,index,title_index)">{{item_title.name}}</a>
           <a class="more" @click="goBCates(item.name,index)">更多 ></a>
         </div>
+      <!--<image_card :image_list="item.image"/>-->
         <div class="main-image clear" >
           <div v-for="(item_image,image_index) in item.image" class="image-box image-item" >
             <div class="image-content" :style="{'background-image':`url(${item_image.image})`}">
@@ -14,12 +15,12 @@
                     <img class="btn-img" :src="item_image.if_collect?collect:unCollect">
                     <span class="btn-span">{{item_image.collection_nums}}</span>
                   </div>
-                  <div class="like-btn" :class="{'btn-active':item_image.if_like}" @click.stop="setLike(item_image.id,index,image_index)" title="点赞">
+                  <div class="like-btn" :class="{'btn-active':item_image.if_like}" @click.stop="setLike(item_image)" title="点赞">
                     <img class="btn-img"  :src="item_image.if_like?like:unlike">
                     <span class="btn-span">{{item_image.like_nums}}</span>
                   </div>
                 </div>
-                <a  class="download-warp"  :href="item_image.image.split('.400x300')[0]" @click.stop="setDownload(item_image.id)" :download="item_image.name" title="点击下载">
+                <a  class="download-warp"  @click.stop="setDownload(item_image)" :download="item_image.name" title="点击下载">
                   <img  class="download-img" src="../assets/download.svg">
                   <span class="download-span">下载</span>
                 </a>
@@ -28,7 +29,7 @@
             <div class="photo-info">
               <div class="works">
                 <div class="works-name">{{item_image.name}}</div>
-                <div class="works-type">{{item_image.cates}}</div>
+                <div class="works-type">{{setCates(item_image.cates)}}</div>
               </div>
               <div class="author">
                 <i class="user-image" :style="{'background-image':`url(${item_image.user.image})`}" @click="getInOtherUser(item_image.user.id)" @mouseenter="showPersonCard(index*10+image_index)" @mouseleave="showPersonCard" :title="'进入'+item_image.user.username+'的主页'"></i>
@@ -54,65 +55,60 @@
           </div>
         </div>
       </div>
+      <collect ref="collect_list"/>
     </div>
 </template>
 
 <script>
-  import {setTitle} from "../utils/user";
-  import {setFollow, setLike, setUnFollow, setUnLike} from "../api/action";
+  import {checkLogin, setLike, showCollect} from "../utils/user";
+  import {setFollow, setUnFollow, setUnLike} from "../api/action";
   import {getInOtherUser, setDownload, setImageInfo} from "../utils/user";
-  import {getTitle, getTypeImage} from "../api/get";
+  import image_card from '../components/card/image_card'
+  import collect from '../components/card/collect'
+  import {getMainImage, getTitle, getTypeImage} from "../api/get";
     export default {
         name: "main_image",
+      components:{
+          image_card,
+        collect
+      },
       data(){
           return {
-            //nav_items:[],
+            nav_items:[],
             image_items:[],
             like:require('../assets/image_like.png'),
             unlike:require('../assets/image_unlike.png'),
             collect:require('../assets/image_collect.png'),
             unCollect:require('../assets/image_unCollect.png'),
-            show_person_card:-1
+            show_person_card:-1,
           }
       },
-      computed:{
-          nav_items(){
-            return this.$store.state.imageGroup.title
-          },
-      },
       created(){
+        let array=this.nav_items;
+        getTitle().then((res)=>{
+          array=res.data;
+          for(let i=0;i<res.data.length;i++){
+            array[i].image=[]
+            getMainImage(`group/${array[i].id}/?page=1&num=4`).then((res)=>{
+              array[i].image=res.data.results
+            })
+          }
+          this.nav_items=array
+          // store.commit('SET_TITLE',array)
+        })
       },
       mounted(){
       },
       methods:{
-        setLike(id,index,image_index){
-          let item=this.nav_items[index].image[image_index]
-          let data=new FormData();
-          data.append('image',id)
-          data.append('user',this.$store.state.user.userInfo.id)
-          if(!item.if_like){
-            setLike(data).then((res)=>{
-              item.if_like=res.data.id
-              item.like_nums++
-            }).catch((error)=>{
-              console.log(error)
-            })
-          }else{
-            setUnLike(item.if_like).then(()=>{
-              item.if_like=false
-              item.like_nums--
-            })
-          }
+        setLike(item){
+         setLike(item)
         },
         showCollect(item){
-          //设置操作图片的id
-          this.$store.commit('SET_IMAGE_ID',item.id);
-          this.$store.commit('SET_COLLECT_ITEM',item)
-          this.$store.commit('SET_COLLECT_LIST',item.id);
-          this.$store.commit('SET_COLLECT_SHOW');
-          document.body.style.overflow='hidden';
+          if(checkLogin())
+          this.$refs.collect_list.showCollect(item)
         },
         setDownload(id){
+          if(checkLogin())
           setDownload(id)
         },
         showImageInfo(id){
@@ -122,17 +118,19 @@
           this.show_person_card=index
         },
         setFollow(item){
-          let data=new FormData();
-          data.append('follow',item.user.id)
-          data.append('fan',this.$store.state.user.userInfo.id)
-          if(!item.if_follow){
-            setFollow(data).then((res)=>{
-               this.actionFollow(item.user.id,res.data.id)
-            })
-          }else{
-            setUnFollow(item.if_follow).then(()=>{
-               this.actionFollow(item.user.id,false)
-            })
+          if(checkLogin()){
+            let data=new FormData();
+            data.append('follow',item.user.id)
+            data.append('fan',this.$store.state.user.userInfo.id)
+            if(!item.if_follow){
+              setFollow(data).then((res)=>{
+                this.actionFollow(item.user.id,res.data.id)
+              })
+            }else{
+              setUnFollow(item.if_follow).then(()=>{
+                this.actionFollow(item.user.id,false)
+              })
+            }
           }
         },
         actionFollow(id1,id2){
@@ -151,32 +149,30 @@
         },
         goSCates(item,index,index1){
           let s_index=[index,index1]
-          console.log(s_index)
-          let cate={
-            cate:item,
-            index:s_index
-          }
-          console.log(cate)
-          const {href}=this.$router.resolve({
-           path:'cates',
-            query:{
-              cate:item,
-              index:s_index
-            }
-          })
-          window.open(href,'_blank')
+          this.goCates(item,s_index)
         },
         goBCates(item,index){
           let s_index=[index]
-          console.log(s_index)
+          this.goCates(item,s_index)
+        },
+        goCates(item,index){
           const {href}=this.$router.resolve({
             path:'cates',
             query:{
               cate:item,
-              index:s_index
+              index:index
             }
           })
           window.open(href,'_blank')
+        },
+        setCates(cates){
+          let array=cates.split("、"),l_cate=[];
+          for(let i=0;i<array.length;i++){
+            let temp=array[i].split("/");
+            l_cate.push(temp[temp.length-1])
+          }
+          cates=l_cate.join(" ");
+          return cates
         }
       }
     }
@@ -245,7 +241,7 @@
   .image-content{
     width: 100%;
     height: 18.54rem;
-    background: no-repeat center;
+    background: no-repeat top;
     background-size: cover;
     position: relative;
   }
@@ -276,11 +272,7 @@
     padding-left: 0.3215rem;
     float: right;
   }
-   .download-span{
-     font-size: $xsx;
-     font-weight: 600;
-     font-family: 'HiraginoSansGB';
-  }
+
   .user-image,.author-big-pic{
     background: no-repeat center;
     -webkit-background-size: cover;

@@ -1,6 +1,6 @@
 @import "variables";
 @import "image_card";
-@import "commen";
+@import "p_card";
 
 
 .hint{
@@ -35,9 +35,10 @@ button
   font-weight: 600;
   cursor:pointer;
   font-size: 1.2rem;
+  text-align: center;
 }
 .submit{
-  color: #fff;
+  color: $f-deep;
   background: $normal;
   border: none;
   &:hover{

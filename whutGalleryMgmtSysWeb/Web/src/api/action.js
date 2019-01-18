@@ -1,6 +1,6 @@
 import axios from '../utils/axios'
 let api='/api'
-export function setLike(data) {
+export function ApiSetLike(data) {
   return axios.post(`${api}/like/`,data)
 }
 export function setUnLike(image_id) {
@@ -38,4 +38,9 @@ export function likeComment(data) {
 }
 export function unLikeComment(id) {
   return axios.delete(`${api}/like_comment/${id}/`)
+}
+
+//下载管理修改记录
+export function changeHis(id,data) {
+  return axios.put(`${api}/images/${id}/`,data)
 }

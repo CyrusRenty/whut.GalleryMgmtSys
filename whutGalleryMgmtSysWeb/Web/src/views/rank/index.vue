@@ -3,11 +3,14 @@
       <tslg_header/>
       <div class="rank-nav">
         <div class="rank-item" v-for="(item,index) in rank_items" >
-          <div class="title" @mouseenter="showDownload(index)" @mouseleave="showDownload(-1)" :class="{on:index===on_item}" >{{item.title}}
+          <div class="title" @mouseenter="showDownload(index)" @mouseleave="showDownload(-1)" :class="{on:index===on_item}" @click="goFollowRank(index)">{{item.title}}
           <ul v-if="index<2&&index===show_list"><li v-for="(item1,index1) in item.list" @click="setTitle(item1,index)">{{item1}}</li></ul>
           </div><i v-if="index<2"></i>
           </div>
       </div>
+    <image_card @cur_page="Page" v-if="show_image" :image_list="image_list" :page_nums="page_nums"/>
+      <follow_rank v-if="!show_image"/>
+    <tslg_footer/>
     </div>
 </template>
 
@@ -15,11 +18,17 @@
   // <iframe src='https://view.officeapps.live.com/op/view.aspx?src=http%3A%2F%2Fonqow625k.bkt.clouddn.com%2FMySQL%25E7%25B4%25A2%25E5%25BC%2595.pptx' width='100%' height='100%' frameborder='1'>
   // </iframe>
   import tslg_header from '../../components/body/tslg_header'
-  import {getRankImage} from "../../api/user";
+  import tslg_footer from '../../components/body/tslg_footer'
+  import follow_rank from './follow_rank'
+  import {getOrderImage, getTypeImage} from "../../api/get";
+  import image_card from '../../components/card/image_card'
     export default {
         name: "index",
       components:{
-          tslg_header
+          tslg_header,
+        image_card,
+        tslg_footer,
+        follow_rank
       },
       data(){
         return {
@@ -27,19 +36,34 @@
             {title:'周收藏量排行',list:['周收藏量排行','月收藏量排行','总收藏量排行']},
             {title:'总关注量排行'}],
           show_list:-1,
-          on_item:0
+          on_item:0,
+          cur_url:'',
+          show_image:true,
+          image_list:[],
+          page_nums:''
         }
       },
+      created(){
+        // this.$store.dispatch('setImageGroupI',`ordering=-download_nums&time=week`)
+        getTypeImage(`images/?ordering=-download_nums&time=week`).then((res)=>{
+          this.setData(res)
+        })
+      },
       methods:{
+        setData(res){
+          this.image_list=res.data.results
+          this.page_nums=Math.ceil(res.data.count/16)
+        },
         showDownload(index){
           this.show_list=index
         },
         setTitle(item,index){
+          this.show_image=true
           this.on_item=index
           this.rank_items[index].title=item
           let params=''
           if(index===0){
-            params='?ordering=-download_nums'
+            params='ordering=-download_nums'
             switch(item){
               case '周下载量排行':{
                 params=params+'&time=week'
@@ -49,15 +73,41 @@
                 params=params+'&time=month'
                 break
               }
-              case '总下载量排行':{
+            }
+          }
+          else{
+            params='ordering=-collection_nums'
+            switch(item){
+              case '周收藏量排行':{
+                params=params+'&time=week'
+                break;
+              }
+              case '月收藏量排行':{
+                params=params+'&time=month'
                 break
               }
             }
           }
-          switch(item){
-            case '':
+          this.cur_url=params
+          // this.$store.commit('SET_IMAGEGROUP')
+          // this.$store.dispatch('setImageGroupI',params)
+          getTypeImage(`images/?${params}`).then((res)=>{
+             this.setData(res)
+          })
+        },
+        Page(item){
+          let params=this.cur_url+`&page=${item}`
+          // this.$store.commit('SET_IMAGEGROUP')
+          // this.$store.dispatch('setImageGroupI',params)
+          getTypeImage(`images/?${params}`).then((res)=>{
+            this.setData(res)
+          })
+        },
+        goFollowRank(index){
+          if(index===2){
+            this.on_item=index
+            this.show_image=false;
           }
-          getRankImage()
         }
       }
     }
@@ -75,6 +125,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    margin-bottom: 3rem;
     font-size: $xls;
     background: #fff;
   }
@@ -106,7 +157,7 @@
   }
   .title >ul{
     position: absolute;
-    z-index: 2;
+    z-index: 3;
     right: .5rem;
     top: 4rem;
     width: 105%;
@@ -123,6 +174,7 @@
     }
   }
   .on{
+    color: $f-deep;
     border-bottom: 0.125rem solid #000;
   }
 </style>

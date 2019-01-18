@@ -2,7 +2,7 @@ import axios from '../utils/axios'
 
 let api='/api'
 export function login(data) {
-  return axios.post(`${api}/login/`, data)
+  return axios.post(`${api}/users/login`, data)//*
 }
 export function register(data) {
   return axios.post(`${api}/users/`, data)
@@ -15,9 +15,6 @@ export function upload(data) {
 }
 export function getUserInfo(user_id) {
   return axios.get(`${api}/users/${user_id}/`)
-}
-export function getRankImage(params) {
-  return axios.get(`${api}/users/`)
 }
 export function addImage(data) {
   return axios.post(`${api}/collect/`,data)

@@ -24,8 +24,8 @@ no result
 image-card
  */
 .person-upload,.person-download,.main-image{
-  width: 100%;
   height: auto;
+  width: 111rem;
   margin: 0 auto;
 }
 .total-num{
@@ -39,7 +39,7 @@ image-card
 }
 .image-item{
   background: #fff;
-  width:24.4rem;
+  width:24.75rem;
   height: 32.3rem;
   margin: 0 1.5rem 3rem 1.5rem;
   zoom: 1;
@@ -120,6 +120,7 @@ image-card
   display: flex;
   justify-content: center;
   align-items: center;
+  font-size: $ss;
 }
 .image-item .download-img{
   width: 1.6rem;
@@ -228,7 +229,7 @@ image-card
 }
 @media screen and (max-width: 2240px) and (min-width: 1200px){
   .width{
-    width: 109.6rem;
+    width: 111rem;
   }
 }
 @media screen and (max-width: 1200px) and (min-width: 925px){

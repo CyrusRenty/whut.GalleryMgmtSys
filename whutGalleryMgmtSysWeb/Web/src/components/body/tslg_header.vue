@@ -2,21 +2,22 @@
   <div>
     <div>
     <div class="tslg-header">
-      <i class="logo" @click="goMain"><a href="http://111.231.230.54/tslg/main"></a> </i>
+      <i class="logo" @click="goMain"><a href="http://118.24.96.186/tslg/main"></a> </i>
       <div class="nav-warp">
         <router-link :to="item.route" class="head-text" v-for="(item,index) in nav_lists" :key="index">{{item.title}}</router-link>
       </div>
-      <div class="header-left">
-      <div class="person-img-wrap" @mouseenter="showOptions" @mouseleave="unShowOptions" v-if="user_image" >
+      <div class="header-left" >
+      <div class="person-img-wrap" @mouseenter="showOptions" @mouseleave="unShowOptions" v-if="user_image&&!is_login" >
         <i :style="{'background-image':`url(${user_image})`,'background-size':'100% 100%','background-position':'center'}" @click="getInPerson" class="person-img"></i>
         <div class="username"> {{username}}</div>
         <div class="user-option-wrap" v-if="show_option">
           <span class="user-option" @click="getInPerson">个人主页</span>
           <span class="user-option" @click="showUserEdit">修改资料</span>
+          <span class="user-option" @click="goUpload">上传</span>
           <span class="user-option" @click="logout">退出</span>
         </div>
       </div>
-        <div v-if="!user_image" class="headLink">
+        <div v-if="!user_image||is_login" class="headLink">
           <a @click="goLogin">登录</a>
           <a class="borderSpan" @click="goRegister">注册</a>
         </div>
@@ -25,11 +26,13 @@
     <div class="search" ref="search" v-if="this.$router.currentRoute.name==='main'">
       <div v-if="!set_top" class="classify" @mouseenter="showClassifyCard" @mouseleave="showClassifyCard"><i></i>分类
         <ul v-if="show_title">
-          <li v-for="(item,index) in classify" @click="setSearch(item.name)" @mouseenter="showClassifyCard1(index)" @mouseleave="showClassifyCard1(-1)"><span>{{item.name}}</span>
+          <li v-for="(item,index) in classify" @click="goBCates(item.name,index)" @mouseenter="showClassifyCard1(index)" @mouseleave="showClassifyCard1(-1)">
+            <span class="item-wrap"><span>{{item.name}}</span><i v-if="item.kids"></i></span>
           <ul v-if="index===show_title1">
-            <li v-for="(item1,index1) in item.kids" @click="setSearch(item1.name)" @mouseenter="showClassifyCard2(index)" @mouseleave="showClassifyCard2(-1)"><span>{{item1.name}}</span>
+            <li v-for="(item1,index1) in item.kids" @click.stop="goSCates(item1.name,index,index1)" @mouseenter="showClassifyCard2(index1)" @mouseleave="showClassifyCard2(-1)">
+              <span class="item-wrap"><span>{{item1.name}}</span><i v-if="item1.kids"></i></span>
             <ul v-if="index1===show_title2">
-              <li v-for="item2 in item1.kids" @click="setSearch(item2.name)"><span>{{item2.name}}</span></li>
+              <li v-for="(item2,index2) in item1.kids" @click.stop="goLCates(item2.name,index,index1,index2)"><span>{{item2.name}}</span></li>
             </ul>
             </li>
           </ul>
@@ -40,16 +43,18 @@
       <label for="search" class="label" @click="startSearch"></label>
     </div>
     </div>
-    <div class="tslg-header-top" ref="search" v-if="set_top&&this.$router.currentRoute.meta.search">
+    <div class="tslg-header-top" ref="search" v-if="set_top&&$router.currentRoute.meta.search">
         <i class="logo" @click="goMain"><a href="http://111.231.230.54/tslg/main"></a> </i>
         <div class="search-top">
           <div class="classify classify1" @mouseenter="showClassifyCard" @mouseleave="showClassifyCard"><i></i>分类
             <ul v-if="show_title">
-              <li v-for="(item,index) in classify" @click="setSearch(item.name)" @mouseenter="showClassifyCard1(index)" @mouseleave="showClassifyCard1(-1)"><span>{{item.name}}</span>
+              <li v-for="(item,index) in classify" @click.stop="goBCates(item.name,index)" @mouseenter="showClassifyCard1(index)" @mouseleave="showClassifyCard1(-1)">
+                <span class="item-wrap"><span>{{item.name}}</span><i v-if="item.kids"></i></span><span>{{item.name}}</span>
                 <ul v-if="index===show_title1">
-                  <li v-for="(item1,index1) in item.kids" @click="setSearch(item1.name)" @mouseenter="showClassifyCard2(index)" @mouseleave="showClassifyCard2(-1)"><span>{{item1.name}}</span>
+                  <li v-for="(item1,index1) in item.kids" @click.stop="goSCates(item1.name,index,index1)" @mouseenter="showClassifyCard2(index1)" @mouseleave="showClassifyCard2(-1)">
+                    <span class="item-wrap"><span>{{item1.name}}</span><i v-if="item1.kids"></i></span>
                     <ul v-if="index1===show_title2">
-                      <li v-for="item2 in item1.kids" @click="setSearch(item2.name)"><span>{{item2.name}}</span></li>
+                      <li v-for="(item2,index2) in item1.kids" @click.stop="goLCates(item2.name,index,index1,index2)"><span>{{item2.name}}</span></li>
                     </ul>
                   </li>
                 </ul>
@@ -60,21 +65,23 @@
           <label for="search1" class="label" @click="startSearch"></label>
         </div>
         <div class="header-left">
-          <div class="person-img-wrap" @mouseenter="showOptions" @mouseleave="unShowOptions" v-if="user_image" >
+          <div class="person-img-wrap" @mouseenter="showOptions" @mouseleave="unShowOptions" v-if="user_image&&!is_login" >
             <i :style="{'background-image':`url(${user_image})`,'background-size':'100% 100%','background-position':'center'}" @click="getInPerson" class="person-img"></i>
             <div class="username"> {{username}}</div>
             <div class="user-option-wrap" v-if="show_option">
               <span class="user-option" @click="getInPerson">个人主页</span>
               <span class="user-option" @click="showUserEdit">修改资料</span>
+              <span class="user-option" @click="goUpload">上传</span>
               <span class="user-option" @click="logout">退出</span>
             </div>
           </div>
-          <div v-if="!user_image" class="headLink">
+          <div v-if="!user_image||is_login" class="headLink">
             <a @click="goLogin">登录</a>
             <a class="borderSpan" @click="goRegister">注册</a>
           </div>
         </div>
     </div>
+    <edit-profile ref="edit"/>
   </div>
 </template>
 
@@ -91,9 +98,8 @@
       },
       data(){
         return {
-          isS:false,
+          is_login:false,
           show_option:false,
-          showEdit:false,
           nav_lists:[
             {title:'首页',route:'/tslg/main'},
             {title:'排行榜',route:'/tslg/ranking_list'},
@@ -119,10 +125,11 @@
       // }
     },
     created(){
-      setTitle()
-      getAllTitle().then((res)=>{
-        this.classify=res.data
-      })
+        if(this.$router.currentRoute.meta.search)
+        getAllTitle().then((res)=>{
+          this.classify=res.data;
+          this.$store.commit('SET_TITLE',res.data)
+        })
     },
     mounted(){
       window.addEventListener('scroll',this.setSearchTop)
@@ -138,12 +145,12 @@
           this.show_option=false
         },
         showUserEdit(){
-          this.$router.push('/tslg/main/editProfile')
+          this.$refs.edit.showEdit()
         },
         logout(){
           cookie.delCookie('token');
           cookie.delCookie('user_id')
-          goLogin()
+          this.is_login=true
         },
         goLogin(){
           goLogin()
@@ -181,6 +188,31 @@
             this.set_top=true
           else
             this.set_top=false
+        },
+        goSCates(item,index,index1){
+          let s_index=[index,index1]
+          this.goCates(item,s_index)
+        },
+        goLCates(item,index,index1,index2){
+          let s_index=[index,index1,index2]
+          this.goCates(item,s_index)
+        },
+        goBCates(item,index){
+          let s_index=[index]
+          this.goCates(item,s_index)
+        },
+        goCates(item,index){
+          const {href}=this.$router.resolve({
+            path:'cates',
+            query:{
+              cate:item,
+              index:index
+            }
+          })
+          window.open(href,'_blank')
+        },
+        goUpload(){
+          this.$router.push({name:'doUpload'})
         }
       },
     }
@@ -195,7 +227,7 @@
     background-color: #fefefe;
     box-sizing: border-box;
     padding: 0 2.625rem;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     border-bottom:0.0625rem solid #e9e9e9;
   }
@@ -203,10 +235,12 @@
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 2;
+    z-index: 3;
     height: 4rem;
   }
   .logo{
+    position: absolute;
+    left: 3rem;
      background: url(../../assets/logo.svg);
      background-size: cover;
      height: 1.875rem;
@@ -229,7 +263,10 @@
   .router-link-active{
      color:$normal;
    }
-
+  .header-left{
+    position: absolute;
+    right: 3rem;
+  }
   .person-img-wrap{
     display: flex;
     height: 5rem;
@@ -250,15 +287,14 @@
     color: $normal;
   }
   .user-option-wrap{
+    position: absolute;
     width: 7.5rem;
-    height: 9rem;
     display: flex;
     flex-direction: column;
     background: #fff;
-    position: absolute;
-    right: 2rem;
+    left: 0;
     top:4rem;
-    z-index: 2;
+    z-index: 99;
     padding: 0 1.1875rem;
   }
 
@@ -340,7 +376,7 @@
     box-shadow:0 0 4px $f-light;
     ul{
       top: 0;
-      left: 7.5rem;
+      left: 7.55rem;
       li{
         color: $f-deep;
         &:hover{
@@ -355,6 +391,22 @@
     line-height: 3rem;
     &:hover{
       color: $normal;
+    }
+  }
+  .item-wrap{
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding-left: .5rem;
+    text-align: left;
+    i{
+      margin-right: .5rem;
+      width: .5rem;
+      height: .7rem;
+      background: url(../../assets/right_arrow.png) center no-repeat;
+      background-size: 100% 100%;
     }
   }
   .classify1 ul{

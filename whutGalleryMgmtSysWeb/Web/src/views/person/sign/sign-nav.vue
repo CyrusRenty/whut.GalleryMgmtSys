@@ -15,7 +15,8 @@
       },
       methods:{
         showSign(){
-          this.$store.commit('SET_SHOW_SIGN')
+          this.$router.push('sign')
+          // this.$store.commit('SET_SHOW_SIGN')
         },
         showIdentify(){
           this.$refs.person_identify.show()
@@ -42,6 +43,7 @@
     margin-bottom: 2rem;
     height: 3rem;
     text-align: center;
+    background: #fff;
   }
   .contract{
     margin-right: 1rem;

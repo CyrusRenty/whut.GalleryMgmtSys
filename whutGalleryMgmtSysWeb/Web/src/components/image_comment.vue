@@ -1,9 +1,12 @@
 <template>
   <div class="comment-warp">
-    <div class="comment-top">
+    <div v-if="!$store.state.user.userInfo" class="login">
+      <a @click="goLogin()">登录</a>发表更多评论
+    </div>
+    <div v-if="$store.state.user.userInfo" class="comment-top">
       <h3>评论</h3>
       <div class="comment-input">
-        <i :style="{'background-image':'url(' + this.$store.state.user.userInfo.image + ')','background-repeat':'no-repeat','background-size':'cover','background-position':'center' }"  ></i>
+        <i :style="{'background-image':'url(' + this.$store.state.user.userInfo.image + ')'}"></i>
         <textarea v-model="comment_content" title="评论"></textarea>
       </div>
       <div class="sc-btn"><input type="button" class="submit" @click="sentComment" value="发表评论"></div>
@@ -92,12 +95,13 @@
         </div>
           </div>
         </div>
-      </div>
+  </div>
 </template>
 
 <script>
   import {report, setComment} from "../api/user";
   import {likeComment, unLikeComment} from "../api/action";
+  import {checkLogin, goLogin} from "../utils/user";
 
     export default {
         name: "image_comment",
@@ -134,6 +138,7 @@
       methods:{
           //发送图片评论
         sentComment(){
+          if(checkLogin()){
             if(this.comment_content){
               let data=new FormData
               data.append('content',this.comment_content)
@@ -154,6 +159,8 @@
                 console.log(res)
               })
             }
+          }
+
           },
         //点赞评论
         setLikeComment(item){
@@ -340,6 +347,9 @@
         //展开相应评论的回复
         changeShowReply(index){
           this.show_all_reply=index
+        },
+        goLogin(){
+          goLogin()
         }
       },
       computed:{
@@ -350,32 +360,42 @@
     }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+  @import "../styles/variables";
   i{
     display: inline-block;
     background:no-repeat center;
-    -webkit-background-size: cover;
+    -webkit-background-size: 100% 100%;
     background-size: 100% 100%;
   }
   .comment-warp{
-    padding: 3rem;
+    padding:0 6rem;
     border-right: 0.0625rem solid #e9e9e9;
+  }
+  .login{
+    padding-top: 2rem;
+    font-size: $ls;
+    a{
+      text-decoration: underline;
+      font-weight: 600;
+    }
   }
   .comment-top{
     display: flex;
     flex-direction: column;
     text-align: left;
     width: 100%;
+    padding-top: 3.5rem;
   }
   .comment-input i{
-    width: 3.75rem;
-    height: 3.75rem;
+    width: 4.5rem;
+    height: 4.5rem;
     margin-right: 1rem;
     border-radius: 50%;
   }
   .comment-input textarea{
-    height: 3.75rem;
-    width: 50rem;
+    height: 4.5rem;
+    width: 62rem;
     border: 0.0625rem solid #cecece;
     font-size: 1.1rem;
     resize: none;
@@ -385,12 +405,13 @@
   }
   .sc-btn .submit{
     float: right;
-    margin-top:0.75rem ;
+    margin-top:1rem ;
     width: 6rem;
     height: 2rem;
     font-size: 1rem;
     line-height: 2rem;
     margin-bottom: 2.5rem;
+    color: $f-deep;
   }
   .comment-bottom{
     min-height: 5rem;
@@ -410,7 +431,7 @@
   }
   .comment-item{
     display: flex;
-    padding: 1.5rem 0;
+    padding: 2.5rem 0;
     border-bottom: 0.0625rem solid #e9e9e9;
   }
   .comment-item .top{
@@ -426,7 +447,7 @@
   }
   .comment-middle{
     text-align: left;
-    width: 48rem;
+    width: 62.5rem;
     word-wrap: break-word;
     /*letter-spacing: 0.1rem;*/
   }
@@ -449,7 +470,7 @@
   }
   .under-context{
     color: #9b9b9b;
-    padding: 0.75rem 0;
+    padding-top: 0.75rem;
   }
   .comment-icon{
     display: flex;
@@ -562,7 +583,7 @@ reply
     font-size: 1.1rem;
   }
   .show-all-reply{
-    color: #9ad3e2;
+    color: $normal;
     cursor: pointer;
     font-size: 1rem;
   }

@@ -35,20 +35,19 @@
     width: 24.4rem;
     height: 32.3rem;
     margin: 0 1.5rem 3rem 1.5rem;
-    background: #e4f2f5;
+    background: #fff;
   }
   i{
-    background: url(../../assets/Add.png);
+    background: url(../../assets/big_icon/add.png);
     background-size: 100% 100%;
-    height: 7rem;
-    width: 7rem;
+    height: 4.7rem;
+    width: 4.7rem;
     cursor: pointer;
   }
   .suggest-text{
     font-size: 1.5rem;
-    margin-top: 2rem;
+    margin-top: 1rem;
   }
-
   .create-wrap{
     display: flex;
     justify-content: center;

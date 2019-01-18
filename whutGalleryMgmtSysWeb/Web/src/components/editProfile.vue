@@ -1,6 +1,6 @@
 <template>
-  <div class="editBox">
-    <i class="deletePage" @click="cancel"></i>
+  <div class="editBox" v-if="show_edit">
+    <!--<i class="deletePage" @click="cancel"></i>-->
   <div id="editProfile" class="clear" ref="editpf"  :style="styleObject">
     <div id="user-image">
       <vue-avatar :scale="scale" ref="vueavatar" @image-ready="onImageReady"/>
@@ -10,53 +10,53 @@
     <div class="edit-warp">
       <div class="edit-item">
         <div class="short-width">
-        <span class="font-middle font-MB">昵称</span>
+        <span class="font-middle font-MB">用户名</span>
         <input type="text" class="user-change-input " v-model="username" ref="change_username" @blur="checkNameExist" @input="inputUserName" title="昵称">
         <div class="hint">{{hint_username}}</div>
         </div>
         <div class="short-width">
-          <span class="font-middle font-MB">专业班级</span>
-          <input type="text" class="user-change-input " v-model="zybj" ref="change_zybj"  @blur="cleanBorder" @input="inputZybj"  title="专业班级">
-          <div class="hint">{{hint_zybj}}</div>
+          <span class="font-middle font-MB">QQ</span>
+          <input type="text" class="user-change-input" maxlength="12" minlength="5" name="QQ" v-model="QQ" ref="change_QQ" title="QQ" @input="inputQQ">
+          <div class="hint">{{hint_QQ}}</div>
         </div>
 
       </div>
       <div class="item-qq">
-          <span class="font-middle font-MB">QQ</span>
-          <input type="text" class="user-change-input" name="QQ" v-model="QQ" ref="change_QQ" @blur="checkQQ" title="QQ" @input="inputQQ">
-          <div class="hint">{{hint_QQ}}</div>
+        <span class="font-middle font-MB">专业班级</span>
+        <input type="text" class="user-change-input " v-model="zybj" ref="change_zybj"  @blur="cleanBorder" @input="inputZybj"  title="专业班级">
+
       </div>
       <div class="item-desc">
         <span class="font-middle font-MB">简介</span>
-        <textarea title="简介" @input="inputDesc" ref="change_desc" v-model="desc"></textarea>
+        <textarea title="简介" ref="change_desc" v-model="desc" maxlength="32"></textarea>
         <div class="hint">{{hint_desc}}</div>
       </div>
-      <div class="hint">{{hint_result}}</div>
-
 
         <div class="sc-btn">
           <input type="button" class="submit" value="保存" @click="submit"/>
           <input type="button" class="cancel" value="返回" @click="cancel"/>
       </div>
+
     </div>
 
   </div>
+    <hint ref="hint"/>
   </div>
 </template>
 
 <script>
     import VueAvatar from './VueAvatar'
     import {changeUserInfo, checkName} from "../api/user";
+    import hint from './hint'
 
     export default {
         name: "editProfile",
-        components:{VueAvatar},
+        components:{VueAvatar,hint},
         data:function(){
             return{
               //插件数据
               rotation:0,
               scale: 1,
-              isShowEdit:false,
               username:'',
               zybj:'',
               desc:'',
@@ -70,8 +70,7 @@
               hint_desc:'',
               hint_QQ:'',
               hint_result:'',
-              hint_email_result:'',
-              hint_image:''
+              show_edit:false
           }
         },
         computed:{
@@ -79,40 +78,28 @@
           return this.$store.state.user.userInfo
         }
       },
-        created(){
-        this.$nextTick(()=>{
-          this.username=this.userInfo.username;
-          this.QQ=this.userInfo.qq;
-          this.desc=this.userInfo.desc;
-          this.zybj=this.userInfo.p_class
-        });
-        document.body.style.overflow='hidden'
-      },
         methods:{
+          showEdit(){
+            document.body.style.overflow='hidden';
+            this.username=this.userInfo.username;
+            this.QQ=this.userInfo.qq;
+            this.desc=this.userInfo.desc;
+            this.zybj=this.userInfo.p_class
+            this.show_edit=true
+          },
           cancel(){
+            this.show_edit=false;
             document.body.style.overflow = 'auto';
-            this.$router.go(-1)
           },
           submit(){
-            this.image=this.$refs.vueavatar.getImageScaled()
-            //console.log(this.image)
+            this.image=this.$refs.vueavatar.getImageScaled();
             if(!this.username||this.hint_username){
               this.hint_username='请填写用户名';
               this.$refs.change_username.style.border='0.0625rem solid #ff0000';
               return
             }
-            if(!this.QQ||this.hint_QQ){
-              this.hint_QQ='请填写正确QQ';
-              this.$refs.change_QQ.style.border='0.0625rem #ff0000 solid';
-              return
-            }
-            if(!this.zybj||this.hint_zybj){
-              this.hint_zybj='请填写专业班级';
-              this.$refs.chagng_zybj.style.border='0.0625rem #ff0000 solid';
-              return
-            }
-            if(this.hint_desc)
-              return
+            if(!this.checkQQ())
+              return;
             let data=new FormData;
             if(this.image){
               data.append('image',this.image)
@@ -123,28 +110,15 @@
               data.append('desc',this.desc);
             changeUserInfo(this.userInfo.id,data).then((res)=>{
               if(res.data.id){
-                this.hint_result='修改成功';
-                setTimeout(()=>{this.hint_result=''},1800);
+                this.$refs.hint.showHint('修改成功');
                 this.reload()
-              }else{
-                this.hint_result=res.data
+                this.cancel()
               }
-
-            }).catch(()=>{
-              this.hint_result='修改失败';
-              setTimeout(()=>{this.hint_result=''},1800);
+            }).catch((res)=>{
+              console.log(res);
+              this.$refs.hint.showHint('修改失败');
               this.reload()
             })
-          },
-          checkEmail(){
-            let re=/^[A-Za-z\d]+([-_.][A-Za-z\d]+)*@([A-Za-z\d]+[-.])+[A-Za-z\d]{2,4}$/;
-            if(!re.test(this.email)){
-              this.hint_email='请输入正确邮箱';
-              this.$refs.change_email.style.border='0.0625rem solid #ff0000'
-            }else{
-              this.hint_email='';
-              this.$refs.change_email.style.border='0.0625rem solid #cecece'
-            }
           },
           checkNameExist(){
             if(this.username!==this.$store.state.user.userInfo.username){
@@ -217,10 +191,12 @@
             let qq_length=this.QQ.length;
             if(qq_length>12||qq_length<9&&qq_length>0){
               this.hint_QQ='请填写正确QQ';
-              this.$refs.change_QQ.style.border='0.0625rem solid #ff0000'
+              this.$refs.change_QQ.style.border='0.0625rem solid #ff0000';
+              return false
             }else{
               this.hint_QQ='';
               this.$refs.change_QQ.style.border='0.0625rem solid #cecece'
+              return true
             }
           },
           reload(){

@@ -1,10 +1,10 @@
 <template>
     <div class="confirm" v-if="show_confirm">
       <div class="content-block">
-        <div class="title-content">{{title.title}}</div>
+        <div class="title-content">{{title}}</div>
         <div class="sc-btn">
           <input type="button" class="cancel" value="取消" @click="cancelConfirm"/>
-          <input type="button" class="submit" value="确认" @click="confirm() "/>
+          <input type="button" class="submit" value="确认" @click="confirm"/>
         </div>
       </div>
     </div>
@@ -15,28 +15,29 @@
 
     export default {
         name: "confirm_box",
-      props:['title'],
       data(){
           return {
-            show_confirm:false
+            show_confirm:false,
+            title:''
           }
       },
       methods:{
-        cancelConfirm(){
-          this.show_confirm=false
-          document.body.style.overflow='auto'
+        deletePage(){
+          this.show_confirm=false;
+          document.documentElement.style.overflow='auto'
         },
-        showConfirm(){
-          this.show_confirm=true
-          document.body.style.overflow='hidden'
+        showConfirm(str){
+          this.show_confirm=true;
+          this.title=str;
+          document.documentElement.style.overflow='hidden'
         },
         confirm(){
-          console.log('delete')
-          console.log(this.title)
-          deleteFolder(this.title.id).then(()=>{
-            this.$store.state.user.collect_his.splice(this.title.index,1)
-          })
-          this.cancelConfirm()
+          this.$emit('confirm',true)
+          this.deletePage()
+        },
+        cancelConfirm(){
+          this.$emit('confirm',false)
+          this.deletePage()
         }
       }
     }

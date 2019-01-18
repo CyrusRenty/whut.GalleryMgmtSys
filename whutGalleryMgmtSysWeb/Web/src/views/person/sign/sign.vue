@@ -141,10 +141,10 @@
           let data=new FormData()
           data.append('user',this.$store.state.user.userInfo.id)
           sendAgree(data).then((res)=>{
-            console.log(res)
           }).catch((res)=>{
             console.log(res)
           })
+          document.documentElement.scrollTop=600
         },
         submit(){
           if(!this.ID_card_image){
@@ -258,7 +258,7 @@
             this.$refs.sign_QQ.style.border='0.0625rem solid #ff0000';
         },
         getBack(){
-          this.$store.commit('SET_SHOW_SIGN')
+          this.$router.go(-1)
         },
         getStatus(){
           getSignStatus().then((res)=>{
@@ -279,7 +279,8 @@
     }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+  @import "../../../styles/variables";
   .margin-t{
     margin-top: 5rem;
   }
@@ -296,12 +297,12 @@
     color: #9b9b9b;
   }
   .get-back{
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     cursor: pointer;
     color: #4a4a4a;
   }
   .get-back:hover{
-    color:#9ad3e2;
+    color:$hover;
   }
   .nav{
     display: flex;
@@ -332,7 +333,7 @@
     color: #fff;
   }
   .active_item{
-    background: #9ad3e2;
+    background: $normal;
   }
   .complete-bg{
     height: 50%;
@@ -342,14 +343,14 @@
     background-size: 100% 90%;
   }
   .active{
-    color: #9ad3e2!important;
-    border-bottom: 0.125rem solid #9Ad3e2;
+    color: $hover!important;
+    border-bottom: 0.125rem solid $hover;
   }
   .item-text{
     color:#9b9b9b;
   }
   .active_item_text{
-    color:#9ad3e2;
+    color: $hover;
   }
   .content{
     background: #fff;
@@ -374,7 +375,7 @@
   .user-form .left{
     width: 26.5rem;
     height: 22rem;
-    background: #e4f2f5;
+    background: #ececec;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -390,7 +391,7 @@
     width: 100%;
   }
   .user-form .left i{
-    background: url(../../../assets/Add.png);
+    background: url(../../../assets/big_icon/add.png);
     background-size: 100% 100%;
     height: 4.5rem;
     width: 4.5rem;
@@ -409,7 +410,7 @@
     text-indent: .5rem;
   }
   .user-form .right input:focus{
-    border-color: #9ad3e2;
+    border-color: $hover;
   }
   .user-from .right span{
     font-size: 1.25rem;
@@ -435,11 +436,14 @@
     width: 20rem;
     height: 3rem;
     border-radius: 3rem;
-    background: #2cbec6;
+    background: $normal;
     color: #fff;
     font-size: 1.25rem;
     font-weight: 600;
     cursor: pointer;
+    &:hover{
+      background: $hover;
+    }
   }
   /*
   合同
@@ -468,7 +472,7 @@
   .btn-agree{
     width: 12rem;
     height: 4rem;
-    background: #2cbec6;
+    background: $normal;
     border-radius: 4rem;
     margin-bottom: 5rem;
     color: #fff;

@@ -5,8 +5,8 @@
         <li v-for="(photo,index) in slides" :key="index" v-if="index===nowIndex"><a target="_blank" :href="photo.url"><img :src="photo.image"></a> </li>
       </transition-group>
     </div>
-    <span @click="goto(prevIndex)" class="slide-btn slide-pre"><i class="arrow-left arrow" ></i></span>
-    <span @click="goto(nextIndex)" class="slide-btn slide-next"><i class="arrow-right arrow"></i></span>
+    <span @click="goto(prevIndex)" @mouseover="showArrow('arrow_left')" @mouseleave="hideArrow('arrow_left')" class="slide-btn slide-pre"><i ref="arrow_left" class="arrow-left arrow" ></i></span>
+    <span @click="goto(nextIndex)" @mouseover="showArrow('arrow_right')" @mouseleave="hideArrow('arrow_right')" class="slide-btn slide-next"><i ref='arrow_right' class="arrow-right arrow"></i></span>
     <div class="center-box"><div class="relative-box">
       <ul class="slide-pages">
         <li v-for="(item, index) in slides" @click="goto(index)">
@@ -51,6 +51,12 @@
         },
         clear () {
           clearInterval(this.invId)
+        },
+        showArrow (item) {
+          this.$refs[`${item}`].style['display'] = 'inline-block'
+        },
+        hideArrow (item) {
+          this.$refs[`${item}`].style['display'] = 'none'
         }
       },
       mounted:function () {
@@ -108,7 +114,8 @@
     /*top: calc(50% - 100px / 2);*/
   }
   .arrow{
-    display: inline-block;
+    display: none;
+    /*display: inline-block;*/
     width:2.5rem;
     height: 3rem;
   }

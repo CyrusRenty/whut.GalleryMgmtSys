@@ -50,20 +50,11 @@ const imageGroup={
     SET_CONTINUE:(state,data)=>{
       state.continue_getImage=data
     },
-    SET_COLLECT_ITEM:(state,data)=>{
-      state.collect_item=data
-    },
     SET_NEXT_SEARCH:(state,data)=>{
       state.next_search=data
     },
     SET_STATUS:(state,data)=>{
       state.status=data
-    },
-    SET_MAIN_SEARCH:(state,data)=>{
-      state.main_search=data
-    },
-    SET_AT_IMAGEINFO:(state,data)=>{
-      state.atImageInfo=data
     },
     SET_COMMENT_LIST:(state,data)=>{
       state.comment_list.push(...data)
@@ -77,15 +68,6 @@ const imageGroup={
     SET_TITLE:(state,data)=>{
       state.title=data
     },
-    SET_IMAGE_MAIN:(state,data)=>{
-      state.image_main=data
-    },
-    SET_NEXT_CATES:(state,data)=>{
-      state.next_cates=data
-    },
-    SET_POSITION:(state,data)=>{
-      state.position=data
-    }
   },
   actions:{
     setImageGroupT({commit,state}){
@@ -106,16 +88,11 @@ const imageGroup={
         })
       })
     },
-    setImageGroupI({commit,state}){
+    setImageGroupI({commit,state},data){
       return new Promise((resolve,reject)=>{
-        getOrderImage(state.main_next_page).then((res)=>{
+        getOrderImage(data).then((res)=>{
           if(res.data){
-            if(res.data.next===null)
-              commit('SET_CONTINUE',false)
-            else{
-              commit('SET_MAIN_NEXT_PAGE',res.data.next.split("?")[1]);
-            }
-            commit('SET_IMAGEGROUPI',res.data.results);
+            commit('SET_IMAGEGROUPI',res.data);
             resolve()
           }else reject()
       }).catch(()=>{
@@ -166,7 +143,6 @@ const imageGroup={
       return new Promise((resolve,reject)=>{
         getOrderImage(state.next_cates).then((res)=>{
           if(res.data){
-
             commit('SET_IMAGEGROUPI',res.data)
             resolve()
           }else reject()

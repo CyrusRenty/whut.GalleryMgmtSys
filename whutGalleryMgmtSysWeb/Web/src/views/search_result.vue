@@ -5,7 +5,7 @@
      <div class="cates-choice">
        <div class="position">
          <span >当前位置：</span><span v-if="!position.length" ><span class="all">全部</span><span> > </span></span>
-         <span v-for="(item,index) in position"><span class="position-item" ><span>{{item.name}}</span><a @click="deletePosition(item,index)" title="点击返回">×</a></span><span> > </span></span>
+         <span v-for="(item,index) in position"><span class="position-item" ><span>{{item.name}}</span><a @click="deletePosition(index)" title="点击返回">×</a></span><span> > </span></span>
          <span>  {{search_content}}  </span>
          <span class="count">&nbsp;&nbsp;共{{count}}个结果</span>
        </div>
@@ -31,16 +31,7 @@
         </div>
       </div>
     </div>
-    <image_card/>
-    <div class="choice-page">
-      <div class="cell" @click="choicePage(cur_page-1)"><i class="right"></i></div>
-      <div class="cell" v-if="show_first" ref="first_page" @click="choicePage(1)">1</div>
-      <div class="cell" v-if="show_first">...</div>
-      <div v-for="(item,index) in page" v-if="index<6&&item<=page_num" class="cell" @click="choicePage(item)" :class="{'active_page':item===cur_page}" ref="pages">{{item}}</div>
-      <div class="cell" v-if="show_last">...</div>
-      <div class="cell" ref="last_page" v-if="show_last" @click="choicePage(page_num)">{{page_num}}</div>
-      <div class="cell" @click="choicePage(cur_page+1)"><i class="left"></i></div>
-    </div>
+    <image_card @cur_page="Page" :image_list="image_list" :page_nums="page_nums"/>
     <tslg_footer/>
   </div>
 </template>
@@ -48,14 +39,16 @@
 <script>
   import tslg_header from '../components/body/tslg_header'
   import tslg_footer from '../components/body/tslg_footer'
-  import image_card from '../components/card/main_image_card'
-  import {getAllTitle} from '../api/get'
+  import image_card from '../components/card/image_card'
+  import page_choice from '../components/page_choice'
+  import {getAllTitle, getTypeImage} from '../api/get'
     export default {
         name: "search_result",
       components:{
           tslg_header,
           tslg_footer,
-        image_card
+        image_card,
+        page_choice
       },
       data(){
           return {
@@ -68,16 +61,13 @@
             order:['最新上传','点赞最多','收藏最多'],
             cates_string:'',
             up_cates_string:'',
-            last_kids:[],
             search:'',
-            page:[1,2,3,4,5,6],
-            show_first:false,
-            show_last:false,
-            show_last_num:false,
             aIndex:-1,
-            cur_page:1,
             cur_format:'',
-            cur_order:'add_time'
+            cur_order:'-add_time',
+            image_list:[],
+            page_nums:0,
+            count:0
           }
       },
       computed:{
@@ -87,114 +77,87 @@
             return search_content
             else return ''
           },
-          count(){
-            return this.$store.state.imageGroup.search_count
-          },
-          page_num(){
-            return Math.ceil(this.$store.state.imageGroup.search_count/8)
-          }
        },
       created(){
         this.getCates()
         if(this.$router.currentRoute.params.search_content){
-          this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&page=1`)
-          this.$store.dispatch('setImageGroupT').then(()=>{})
+         this.actionDis(`images/?search=${this.search_content}&page=1`)
         }
       },
       mounted(){
-        this.$refs.format_radio[0].checked=true
-        this.$refs.all.style.color='#ffd100'
+        this.$refs.format_radio[0].checked=true;
+        this.$refs.all.style.color='#ffd100';
         this.$refs.order[0].style.color='#ffd100'
-        if(this.page_num>7){
-          this.show_last=true
-        }
-        if(this.page_num>6){
-          this.show_last_num=true
-        }
-        console.log(this.aIndex)
       },
       methods:{
           getCates(){
             getAllTitle().then((res)=>{
-              this.cates=res.data
-              this.cates_=res.data
+              this.cates=this.cates_=res.data
               let query=this.$router.currentRoute.query
               if(query.index){
-                let len=query.index.length
-                for(let i=0;i<len;i++){
-                 this.set(this.cates_[query.index[i]],query.index[i])
-                }
-                this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&cates=${this.cates_string}&ordering=${this.cur_order}&pattern=${this.cur_format}`)
-                this.$store.commit('SET_IMAGEGROUP');
-                this.$store.dispatch('setImageGroupT')
-                if(len>1){
-                  this.$nextTick(()=>{
-                    this.aIndex=parseInt(query.index[len-1])
-                  })
-                }
+                for(let item of query.index)
+                  this.set(this.cates_[item],item)
+                this.actionDis(`images/?search=${this.search_content}&cates=${this.cates_string}&ordering=${this.cur_order}&pattern=${this.cur_format}`)
               }
+
             })
           },
         set(item,index){
           this.cates_string=item.name
           item.index=index
           if(this.position.length){
-            if(this.position[this.position.length-1].kids.length){
+            if(this.position[this.position.length-1].kids){
               this.position.push(item)
             }else this.position[this.position.length-1]=item
           }else  this.position.push(item)
-          this.last_kids.push(index)
-          if(item.kids.length){
+          if(item.kids){
             this.first=false
             this.cates_=item.kids
             this.up_cates_string=this.cates_string
-          }else{
+          }else
             this.setColor(index)
-          }
-          return
         },
-        actionDis(){
-          this.$store.commit('SET_IMAGEGROUP');
-          this.$store.dispatch('setImageGroupT')
+        actionDis(params){
+          getTypeImage(params).then((res)=>{
+            this.image_list=res.data.results;
+            this.count=res.data.count;
+            this.page_nums=Math.ceil(res.data.count/16)
+          })
           this.cur_page=1
         },
         choiceCate(item,index){
-         this.set(item,index)
-          this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&cates=${this.cates_string}&ordering=${this.cur_order}&pattern=${this.cur_format}`)
-          this.actionDis()
+         this.set(item,index);
+          this.actionDis(`images/?search=${this.search_content}&cates=${this.cates_string}&ordering=${this.cur_order}&pattern=${this.cur_format}`)
         },
-        deletePosition(item,index){
-            let position=this.position
+        deletePosition(index){
+            let position=this.position;
             if(index===0){
-              this.cates_=this.cates
+              this.cates_=this.cates;
               this.cates_string=''
             }
             else{
-              this.cates_=position[index-1].kids
+              this.cates_=position[index-1].kids;
               this.cates_string=position[index-1].name
             }
-          this.$refs.all.style.color='#ffd100'
+          this.$refs.all.style.color='#ffd100';
           this.aIndex=-1
           this.position.splice(index,position.length-index)
-          this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&cates=${this.cates_string}&ordering=${this.cur_order}&pattern=${this.cur_format}`)
-          this.actionDis()
+          this.actionDis(`images/?search=${this.search_content}&cates=${this.cates_string}&ordering=${this.cur_order}&pattern=${this.cur_format}`)
         },
         searchAll(){
           this.$refs.all.style.color='#ffd100'
           this.aIndex=-1
-          this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&cates=${this.up_cates_string}&ordering=${this.cur_order}&pattern=${this.cur_format}`)
-          this.actionDis()
+          this.deletePosition(this.position.length-1)
         },
         setColor(index){
-          this.$refs.all.style.color='#4a4a4a'
-          this.aIndex=index
+          this.$refs.all.style.color='#4a4a4a';
+          this.aIndex=parseInt(index)
         },
         choiceFormat(item){
           if(item==="全部")
             item = ''
-          this.cur_format = item
-          this.$store.commit('SET_NEXT_SEARCH', `images/?search=${this.search_content}&page=1&cates=${this.cates_string}&pattern=${item}&ordering=${this.cur_order}`)
-          this.actionDis()
+          this.cur_format = item;
+          this.actionDis(`images/?search=${this.search_content}&page=1&cates=${this.cates_string}&pattern=${item}&ordering=${this.cur_order}`)
         },
         choiceOrder(item,index){
           for(let i=0;i<3;i++){
@@ -203,21 +166,20 @@
           this.$refs.order[index].style.color='#ffd100'
           switch(item){
             case '最新上传':{
-              item='add_time';
+              item='-add_time';
               break
             }
             case '点赞最多':{
-              item='like_nums';
+              item='-like_nums';
               break
             }
             case '收藏最多':{
-              item='collection_nums';
+              item='-collection_nums';
               break
             }
           }
           this.cur_order=item
-          this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&page=1&cates=${this.cates_string}&ordering=${item}&pattern=${this.cur_format}`)
-          this.actionDis()
+          this.actionDis(`images/?search=${this.search_content}&page=1&cates=${this.cates_string}&ordering=${item}&pattern=${this.cur_format}`)
         },
         startSearch(){
           if(!this.search)
@@ -228,35 +190,9 @@
           })
           window.open(href)
         },
-        choicePage(item){
-            console.log(item)
-            if(item<=0||item>this.page_num)
-              return
-            this.cur_page=item
-          this.$store.commit('SET_NEXT_SEARCH',`images/?search=${this.search_content}&page=${item}&cates=${this.cates_string}&ordering=${this.cur_order}&pattern=${this.cur_format}`)
-          this.$store.commit('SET_IMAGEGROUP');
-          this.$store.dispatch('setImageGroupT').then(()=>{})
-          if(this.page_num>7){
-                let page_num=this.page_num
-            if(item===1){
-              this.page=[1,2,3,4,5,6]
-              this.show_first=false
-            }
-            if(item>=6){
-              if((page_num-item)>2){
-                this.show_first=true
-                this.page=[item-2,item-1,item,item+1,item+2]
-                this.show_last=true
-              }else{
-                this.show_last=false
-              }
-            }
-            if(item===page_num){
-              this.page=[page_num-5,page_num-4,page_num-3,page_num-2,page_num-1,page_num]
-              this.show_last=false
-            }
-          }
-        }
+        Page(item){
+            this.actionDis(`images/?search=${this.search_content}&page=${item}&cates=${this.cates_string}&ordering=${this.cur_order}&pattern=${this.cur_format}`)
+        },
       }
     }
 </script>
@@ -269,6 +205,7 @@
   .top-items{
     text-align: left;
     background: #fff;
+    margin-bottom: 3rem;
   }
   .cates-choice{
     height: 10.6875rem;

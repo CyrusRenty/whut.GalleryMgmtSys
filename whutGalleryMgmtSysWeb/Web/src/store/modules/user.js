@@ -14,7 +14,7 @@ const user={
     show_collect:false,
     collect_list:[],//main
     upload_his:[],//mock.photos.results,
-    collect_his:[],//person
+    folder_list:[],//person
     folder_images:{},
     download_his:[],
     other_user_images:[],
@@ -26,7 +26,8 @@ const user={
     down_count:1,
     up_count:1,
     other_userInfo:{},
-    doLogin:true
+    doLogin:true,
+    cur_router:''
   },
   mutations:{
     SET_TOKEN:(state,data)=>{
@@ -52,8 +53,8 @@ const user={
       state.upload_his.push(...data.results)
       state.up_count=data.count
     },
-    SET_COLLECTION:(state,data)=>{
-      state.collect_his=data;
+    SET_FOLDER_LIST:(state,data)=>{
+      state.folder_list=data;
     },
     SET_DOWNLOAD_HIS:(state,data)=>{
       state.download_his.push(...data.results)
@@ -89,18 +90,27 @@ const user={
     },
     SET_DO_LOGIN:(state,data)=>{
       state.doLogin=data
+    },
+    SET_CUR_ROUTER:(state,data)=>{
+      state.cur_router=data
     }
   },
   actions:{
     Login({commit},userInfo){
       return new Promise((resolve,reject)=>{
         login(userInfo).then((res)=>{
-          if(res.data.token){
+          if(res){
+            cookie.delCookie('token')
             cookie.setCookie('token',res.data.token,7)
             commit('SET_TOKEN',true);
+            cookie.delCookie('user_id')
             cookie.setCookie('user_id',jwt.decode(cookie.getCookie('token')).user_id,7)
             resolve()
-          } else reject()
+          } else{
+            reject()
+          }
+        }).catch(()=>{
+          reject()
         })
       })
     },
@@ -149,10 +159,10 @@ const user={
         })
       })
     },
-    SetCollection({commit}){
+    SetFolderList({commit}){
       return new Promise((resolve,reject)=>{
          getCollection().then((res)=>{
-          commit('SET_COLLECTION',res.data)
+          commit('SET_FOLDER_LIST',res.data)
            resolve()
         }).catch((error)=>{
           reject(error)

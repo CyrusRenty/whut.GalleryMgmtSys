@@ -463,25 +463,12 @@ export default {
           if(!file)
             return false
             const { width, height } = this.getDimensions();
-
             const canvas = document.createElement('canvas');
             canvas.width = width;
             canvas.height = height;
             let newCtx=canvas.getContext('2d')
-
-            // don't paint a border here, as it is the resulting image
-            //this.paintImage(canvas.getContext('2d'), this.state.image, 0);
             let imgDataA = this.context.getImageData(0, 0, canvas.width, canvas.height);
             newCtx.putImageData(imgDataA,0,0,0,0,canvas.width,canvas.height)
-          //   canvas.toBlob((blob)=>{
-          //   let data=new FormData
-          //     let reader=new FileReader()
-          //     reader(blob)
-          //   data.append('image',blob)
-          //   changeUserInfo(this.$store.state.user.userInfo.id,data).then((res)=>{
-          //     console.log(res.data)
-          //   })
-          // }, `${file.type}`,1)
             let newImg=canvas.toDataURL(`${file.type}`)
             let bytes=window.atob(newImg.split(',')[1]);        //去掉url的头，并转换为byte
             //处理异常,将ascii码小于0的转换为大于0
@@ -490,13 +477,8 @@ export default {
             for (let i = 0; i < bytes.length; i++) {
               ia[i] = bytes.charCodeAt(i);
             }
-          let newFile=new File([ab],file.name, {type : `${file.type}`})
-          //   //let newFile=new Blob( [ab] , {type : `${file.type}`});
-          //   // console.log(file.type)
-          //  // newFile.filename=file.name
-          //
-          //    //console.log(newFile.filename)
-           console.log(newFile)
+            let newFile=new File([ab],file.name, {type : `${file.type}`})
+            console.log(newFile)
             return newFile;
         },//21
         imageChanged () {

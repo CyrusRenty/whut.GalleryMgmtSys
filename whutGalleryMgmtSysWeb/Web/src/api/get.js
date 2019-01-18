@@ -8,7 +8,7 @@ export function getBanner() {
   return axios.get(`${api}/banners/`)
 }
 export function getTypeImage(data){
-  return axios.get(`${api}/${data}`)
+  return axios.get(`${api}/${data}&num=16`)
 }
 export function getOrderImage(data){
   return axios.get(`${api}/images/?${data}`)
@@ -32,12 +32,12 @@ export function getUploadHistory(page) {
   return axios.get(`${api}/images/?${page}`)
 }
 
-export function getFollowRankList() {
-  return axios.get(`${api}/users/?ordering=-fan_nums`)
+export function getFollowRankList(params) {
+  return axios.get(`${api}/users/?ordering=-fan_nums&num=4&page=${params}`)
 }
 
-export function getSignedList() {
-  return axios.get(`${api}/users/?if_sign=true`)
+export function getSignedList(params) {
+  return axios.get(`${api}/users/?if_sign=true&num=4&${params}`)
 }
 
 //根据收藏夹id获取收藏夹全部图片
@@ -54,8 +54,12 @@ export function getComment(image_id) {
 export function getAllTitle() {
   return axios.get(`${api}/group/?show=true`)
 }
+//首页标题
 export function getTitle() {
   return axios.get(`${api}/group/`)
+}
+export function getMainImage(data) {
+  return axios.get(`${api}/${data}&num=4`)
 }
 
 export function getFans() {
@@ -63,4 +67,13 @@ export function getFans() {
 }
 export function getMyFollow() {
   return axios.get(`${api}/followers/`)
+}
+
+//作品管理
+export function getWorkStatus(params) {
+  return axios.get(`${api}/images/?${params}`)
+}
+
+export function getWorkNums() {
+  return axios.get(`${api}/image_num/`)
 }

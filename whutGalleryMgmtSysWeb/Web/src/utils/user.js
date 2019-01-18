@@ -1,34 +1,9 @@
-import {setLike,setUnLike,download} from "../api/action";
+import {download, setUnLike,ApiSetLike} from "../api/action";
 import store from '../store'
 import router from '../router'
-import {getTypeImage,getTitle} from "../api/get";
-const user= {
-  setLike(id, index) {
-    let data = new FormData();
-    data.append('image', id)
-    data.append('user', this.$store.state.user.userInfo.id)
-    if (!this.$store.state.imageGroup.image[index].if_like) {
-      setLike(data).then((res) => {
-        this.$store.state.imageGroup.image[index].if_like = res.data.id
-        this.$store.state.imageGroup.image[index].like_nums++
-      }).catch((error) => {
-        console.log(error)
-      })
-    } else {
-      setUnLike(id).then(() => {
-        this.$store.state.imageGroup.image[index].if_like = false
-        this.$store.state.imageGroup.image[index].like_nums--
-      })
-    }
-  },
-  checkNumber(str){
-    if(str.length>11){
-      return '输入数字长度不合法'
-    }else if(str.charAt(0)==="0"||parseFloat(str)!==parseInt(str)){
-      return '输入格式错误'
-    }else return ''
-  },
-}
+import cookie from './cookie'
+import axios from './axios'
+
 
 export function setImageInfo(id) {
   const {href} = router.resolve({
@@ -39,10 +14,43 @@ export function setImageInfo(id) {
   })
   window.open(href, '_blank')
 }
-export function setDownload(id){
+export function setDownload(item){
   let data=new FormData
-  data.append('image',id)
-  download(data).then((res)=>{})
+  data.append('image',item.id)
+  let config={
+    headers:{
+      responseType: 'blob'
+    }
+  }
+  axios.post(`/api/download/`,data,config).then((res)=>{
+    let blob=new Blob([res.data])
+    let url =window.URL.createObjectURL(blob)
+    console.log(blob)
+    let link = document.createElement('a');
+    link.style.display = 'none';
+    link.href = url;
+    link.download=item.name+'.'+item.pattern
+    document.body.appendChild(link);
+    console.log(link)
+    link.click();
+    window.URL.revokeObjectURL(link.href);
+  })
+  // download(data).then((res)=>{
+  //   let blob=new Blob([res.data])
+  //   // let objectUrl = URL.createObjectURL(blob);
+  //  //  console.log(objectUrl)
+  //  // window.location.href = objectUrl;
+  //   let url =window.URL.createObjectURL(blob)
+  //   console.log(url)
+  //   let link = document.createElement('a')
+  //   link.style.display = 'none'
+  //   link.href = url
+  //   link.download=item.name+'.'+item.pattern
+  //   //link.setAttribute('download', '123')
+  //   document.body.appendChild(link)
+  //   link.click()
+  //   window.URL.revokeObjectURL(link.href);
+  // })
 }
 export function getInOtherUser(id){
   if(id===store.state.user.userInfo.id)
@@ -54,24 +62,48 @@ export function getInOtherUser(id){
   }
 }
 export function goLogin() {
-  store.commit('SET_DO_LOGIN',true)
+  store.commit('SET_CUR_ROUTER',router.currentRoute.fullPath);
+  store.commit('SET_DO_LOGIN',true);
   router.push('/tslg/login')
 }
 export function goRegister() {
-  store.commit('SET_DO_LOGIN',false)
+  store.commit('SET_DO_LOGIN',false);
   router.push({name:'login'})
 }
-export function setTitle() {
-  var array=[]
-  getTitle().then((res)=>{
-    array=res.data
-    for(let i=0;i<res.data.length;i++){
-      array[i].image=[]
-      getTypeImage(`group/${i+1}/?page=1&num=4`).then((res)=>{
-        array[i].image=res.data.results
+
+export function checkLogin() {
+  if(cookie.getCookie('token'))
+    return true
+  else{
+    store.commit('SET_CUR_ROUTER',router.currentRoute.fullPath)
+    router.push('/tslg/login')
+  }
+}
+export function showCollect(id) {
+  if(checkLogin()) {
+    store.commit('SET_IMAGE_ID',id);
+    store.commit('SET_COLLECT_LIST',id);
+    store.commit('SET_COLLECT_SHOW');
+    document.body.style.overflow = 'hidden';
+  }
+}
+export function setLike(item) {
+  if(checkLogin()){
+    let data=new FormData();
+    data.append('image',item.id);
+    data.append('user',store.state.user.userInfo.id);
+    if(!item.if_like){
+      ApiSetLike(data).then((res)=>{
+        item.if_like=res.data.id;
+        item.like_nums++
+      }).catch((error)=>{
+        console.log(error)
+      })
+    }else{
+      setUnLike(item.if_like).then(()=>{
+        item.if_like=false;
+        item.like_nums--
       })
     }
-    store.commit('SET_TITLE',array)
-  })
-  return array
+  }
 }
